@@ -37,18 +37,37 @@ model Session {
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
+model ToolConnection {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  toolName      String
+  accessToken   String?  @db.Text
+  refreshToken  String?  @db.Text
+  expiresAt     DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([userId, toolName])
+}
+
 model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String?   @unique
-  emailVerified DateTime?
-  image         String?
-  password      String?
-  role          String    @default("USER")
-  accounts      Account[]
-  sessions      Session[]
-  business      Business? @relation("BusinessAdmin")
-  clientPortal  ClientPortal?
+  id                String    @id @default(cuid())
+  name              String?
+  email             String?   @unique
+  emailVerified     DateTime?
+  image             String?
+  password          String?
+  role              String    @default("USER")
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  accounts          Account[]
+  sessions          Session[]
+  toolConnections   ToolConnection[]
+  toolConfigurations ToolConfiguration[]
+  managedBusiness   Business? @relation("BusinessAdmin")
+  clientPortal      ClientPortal?
+  businesses        Business[] @relation("BusinessUsers")
 }
 
 model VerificationToken {
@@ -76,6 +95,7 @@ model Business {
   updatedAt   DateTime @updatedAt
   adminId     String   @unique
   admin       User     @relation("BusinessAdmin", fields: [adminId], references: [id])
+  users       User[]   @relation("BusinessUsers")
   clientPortal ClientPortal?
   metrics     Metric[]
   tools       Tool[]
@@ -130,6 +150,8 @@ model Tool {
   status      ToolStatus @default(PENDING)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  @@unique([businessId, name])
 }
 
 model ToolAccess {
@@ -183,4 +205,16 @@ enum ToolStatus {
   PENDING
   GRANTED
   DENIED
+}
+
+model ToolConfiguration {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id])
+  toolName      String
+  configuration Json
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([userId, toolName])
 }

@@ -2,6 +2,7 @@ import { AuthOptions } from "next-auth";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "./prisma";
 import CredentialsProvider from "next-auth/providers/credentials";
+import GoogleProvider from "next-auth/providers/google";
 
 export const authOptions: AuthOptions = {
   adapter: PrismaAdapter(prisma),
@@ -27,6 +28,18 @@ export const authOptions: AuthOptions = {
 
         return user;
       }
+    }),
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      authorization: {
+        params: {
+          prompt: 'consent',
+          access_type: 'offline',
+          response_type: 'code',
+          scope: 'openid email profile https://www.googleapis.com/auth/analytics.readonly https://www.googleapis.com/auth/analytics'
+        }
+      }
     })
   ],
   session: {
@@ -34,6 +47,7 @@ export const authOptions: AuthOptions = {
   },
   pages: {
     signIn: "/auth/signin",
+    error: '/auth/error'
   },
   callbacks: {
     session: async ({ session, token }) => {

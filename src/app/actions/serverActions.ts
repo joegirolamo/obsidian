@@ -251,11 +251,21 @@ export async function getBusinessToolsAction(businessId: string) {
       isRequested: tool.isRequested,
       authUrl: tool.name === 'Google Analytics' 
         ? '/auth/google-analytics'
-        : tool.name === 'Facebook Ads'
-        ? '/auth/facebook'
+        : tool.name === 'Google Ads'
+        ? '/auth/google-ads'
+        : tool.name === 'Meta Ads'
+        ? '/auth/meta-ads'
+        : tool.name === 'Meta Page'
+        ? '/auth/meta-page'
+        : tool.name === 'Meta Dataset'
+        ? '/auth/meta-dataset'
+        : tool.name === 'LinkedIn Page'
+        ? '/auth/linkedin-page'
+        : tool.name === 'LinkedIn Ads'
+        ? '/auth/linkedin-ads'
         : tool.name === 'Shopify'
         ? '/auth/shopify'
-        : undefined
+        : '/auth/request-access' // Default fallback for tools without specific OAuth
     }));
 
     console.log('Formatted tools:', formattedTools);
@@ -319,23 +329,38 @@ export async function createDefaultToolsAction(businessId: string) {
         isRequested: false,
       },
       {
-        name: 'Google Search Console',
-        description: 'Monitor search performance and website health',
+        name: 'Google Ads',
+        description: 'Manage and optimize Google advertising campaigns',
         isRequested: false,
       },
       {
-        name: 'Google Tag Manager',
-        description: 'Manage marketing and analytics tags',
+        name: 'Meta Ads',
+        description: 'Manage Facebook and Instagram advertising campaigns',
         isRequested: false,
       },
       {
-        name: 'Google Business Profile',
-        description: 'Manage your Google Business listing',
+        name: 'Meta Page',
+        description: 'Access Facebook page insights and management',
         isRequested: false,
       },
       {
-        name: 'Facebook Business Manager',
-        description: 'Manage Facebook business assets and ads',
+        name: 'Meta Dataset',
+        description: 'Access Meta data for analysis and reporting',
+        isRequested: false,
+      },
+      {
+        name: 'LinkedIn Page',
+        description: 'Manage LinkedIn company page and insights',
+        isRequested: false,
+      },
+      {
+        name: 'LinkedIn Ads',
+        description: 'Manage LinkedIn advertising campaigns',
+        isRequested: false,
+      },
+      {
+        name: 'Shopify',
+        description: 'Access store data, orders, and analytics',
         isRequested: false,
       },
     ];
@@ -377,5 +402,33 @@ export async function updateToolRequest(toolId: string, isRequested: boolean) {
   } catch (error) {
     console.error('Error updating tool request:', error);
     return { success: false, error: 'Failed to update tool request' };
+  }
+}
+
+export async function deleteAllToolsAction(businessId: string) {
+  try {
+    console.log('Deleting all tools for business:', businessId);
+    
+    // Delete all tool access records first
+    await prisma.toolAccess.deleteMany({
+      where: {
+        tool: {
+          businessId
+        }
+      }
+    });
+
+    // Then delete all tools
+    await prisma.tool.deleteMany({
+      where: {
+        businessId
+      }
+    });
+
+    console.log('Successfully deleted all tools for business:', businessId);
+    return { success: true };
+  } catch (error) {
+    console.error('Failed to delete tools:', error);
+    return { success: false, error: 'Failed to delete tools' };
   }
 } 

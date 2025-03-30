@@ -6,6 +6,13 @@ export default async function middleware(request: NextRequestWithAuth) {
   const token = await getToken({ req: request });
   const isAuthPage = request.nextUrl.pathname.startsWith('/auth');
   const isAdminPage = request.nextUrl.pathname.startsWith('/admin');
+  const isConnectPage = request.nextUrl.pathname.startsWith('/connect');
+  const isConnectApi = request.nextUrl.pathname.startsWith('/api/connect');
+
+  // Allow access to connect pages and API
+  if (isConnectPage || isConnectApi) {
+    return NextResponse.next();
+  }
 
   // Redirect to admin if authenticated user tries to access auth pages
   if (isAuthPage && token) {
@@ -26,5 +33,5 @@ export default async function middleware(request: NextRequestWithAuth) {
 }
 
 export const config = {
-  matcher: ['/admin/:path*', '/auth/:path*'],
+  matcher: ['/admin/:path*', '/auth/:path*', '/connect/:path*', '/api/connect/:path*'],
 }; 
