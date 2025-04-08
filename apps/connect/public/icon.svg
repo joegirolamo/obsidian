@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+  <path
+    d="M12 2L3 8.5V15.5L12 22L21 15.5V8.5L12 2ZM12 4.25L18.5 9L12 13.75L5.5 9L12 4.25Z"
+    fill="#000000"
+    fillRule="evenodd"
+    clipRule="evenodd"
+  />
+</svg>
