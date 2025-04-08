@@ -1,5 +1,12 @@
 {
   "/favicon.ico/route": "app/favicon.ico/route.js",
   "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js",
-  "/admin/page": "app/admin/page.js"
+  "/api/verify-access-code/route": "app/api/verify-access-code/route.js",
+  "/page": "app/page.js",
+  "/admin/page": "app/admin/page.js",
+  "/admin/business-profile/page": "app/admin/business-profile/page.js",
+  "/portal/[businessId]/metrics/page": "app/portal/[businessId]/metrics/page.js",
+  "/portal/[businessId]/tools/page": "app/portal/[businessId]/tools/page.js",
+  "/admin/dvcp/assessments/page": "app/admin/dvcp/assessments/page.js",
+  "/admin/dvcp/scorecards/page": "app/admin/dvcp/scorecards/page.js"
 }

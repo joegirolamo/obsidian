@@ -1,19 +1,14 @@
 {
-  "name": "obsidian-monorepo",
+  "name": "obsidian",
   "private": true,
   "scripts": {
-    "build": "turbo run build",
-    "dev": "turbo run dev",
-    "lint": "turbo run lint",
+    "build": "cd apps/connect && npm run build",
+    "dev": "cd apps/connect && npm run dev",
+    "lint": "cd apps/connect && npm run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\""
   },
   "devDependencies": {
-    "turbo": "latest",
     "prettier": "^3.0.0"
   },
-  "packageManager": "npm@10.2.4",
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ]
+  "packageManager": "npm@10.2.4"
 }

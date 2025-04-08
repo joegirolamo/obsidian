@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import Badge from '@obsidian/ui/src/components/Badge';
-import Button from '@obsidian/ui/src/components/Button';
+import Badge from '../packages/ui/src/components/Badge';
+import Button from '../packages/ui/src/components/Button';
 
 interface Score {
   category: string;

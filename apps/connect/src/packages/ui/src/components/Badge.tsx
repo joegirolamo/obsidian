@@ -1,6 +1,6 @@
 'use client';
 
-import { cn } from '@obsidian/utils';
+import { cn } from '../../../../packages/utils/src/cn';
 
 export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
   variant?: 'primary' | 'secondary' | 'success' | 'error' | 'warning' | 'info';
