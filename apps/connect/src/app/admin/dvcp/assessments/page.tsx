@@ -467,8 +467,8 @@ export default function AssessmentsPage() {
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-gray-900 truncate">
                     {activeTab}
-                  </p>
-                </div>
+            </p>
+          </div>
                 <div className="ml-2">
                   <svg
                     className={`h-5 w-5 text-gray-500 transform transition-transform ${
@@ -485,8 +485,8 @@ export default function AssessmentsPage() {
                       d="M19 9l-7 7-7-7"
                     />
                   </svg>
-                </div>
-              </div>
+        </div>
+      </div>
 
               {isDropdownOpen && (
                 <div className="absolute left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-50">
@@ -510,7 +510,7 @@ export default function AssessmentsPage() {
                   </div>
                 </div>
               )}
-            </div>
+        </div>
 
             <div className="flex items-center gap-4 ml-4">
               {isLoading ? (
@@ -543,7 +543,7 @@ export default function AssessmentsPage() {
                       <span className={`font-medium whitespace-nowrap ${getScoreColor(question.score)}`}>
                         {question.score}/10
                       </span>
-                    </div>
+          </div>
                     <div className="space-y-2">
                       <div className="relative">
                         <Slider
@@ -568,13 +568,13 @@ export default function AssessmentsPage() {
                             border-color: ${question.score <= 3 ? '#ef4444' : question.score <= 6 ? '#eab308' : '#22c55e'};
                           }
                         `}</style>
-                      </div>
+            </div>
                       <div className="flex gap-2 text-xs text-gray-500">
                         <span>0</span>
                         <span className="flex-1 text-center">5</span>
                         <span>10</span>
-                      </div>
-                    </div>
+          </div>
+        </div>
                     <div>
                       <textarea
                         className="form-input w-full"
@@ -586,10 +586,10 @@ export default function AssessmentsPage() {
                           e.target.value
                         )}
                       />
-                    </div>
-                  </div>
-                </div>
-              </div>
+          </div>
+            </div>
+          </div>
+        </div>
             ))}
           </div>
         )}

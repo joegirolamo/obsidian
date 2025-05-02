@@ -158,13 +158,15 @@ export default function AdminNav() {
   const isActivePath = (href: string) => {
     // Remove query parameters for path comparison
     const cleanHref = href.split('?')[0];
-    if (cleanHref === '/admin' && pathname === '/admin') {
-      return true;
+    const cleanPathname = pathname.split('?')[0];
+    
+    // For the root admin path, do exact match
+    if (cleanHref === '/admin') {
+      return cleanPathname === '/admin';
     }
-    if (cleanHref.includes('/tools-metrics/') || cleanHref.includes('/dvcp/')) {
-      return pathname.startsWith(cleanHref.split('/').slice(0, 3).join('/'));
-    }
-    return cleanHref !== '/admin' && pathname.startsWith(cleanHref);
+    
+    // For other paths, do exact match
+    return cleanPathname === cleanHref;
   };
 
   return (
@@ -275,12 +277,14 @@ export default function AdminNav() {
                         key={subItem.href}
                         href={subItem.href}
                         className={`flex items-center px-3 py-2 text-sm rounded-md transition-colors ${
-                          pathname === subItem.href 
+                          isActivePath(subItem.href)
                             ? 'bg-gray-800 text-white' 
                             : 'text-gray-300 hover:bg-gray-800 hover:text-white'
                         }`}
                       >
-                        <subItem.icon className="w-4 h-4 mr-3" />
+                        <subItem.icon className={`w-4 h-4 mr-3 ${
+                          isActivePath(subItem.href) ? 'text-white' : 'text-gray-500'
+                        }`} />
                         {subItem.label}
                       </Link>
                     ))}

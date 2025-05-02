@@ -90,6 +90,7 @@ model Business {
   industry    String?
   website     String?
   description String?
+  properties  String[] @default([])
   connections Json?    @default("{}")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

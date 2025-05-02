@@ -12,6 +12,7 @@ export async function updateBusinessDetails(
     industry: string;
     website: string;
     description?: string;
+    properties?: string[];
   }
 ) {
   try {
@@ -21,7 +22,8 @@ export async function updateBusinessDetails(
         name: data.name,
         industry: data.industry,
         website: data.website,
-        description: data.description
+        description: data.description,
+        properties: data.properties
       },
     });
     
@@ -196,6 +198,7 @@ export async function getBusinessById(businessId: string) {
         industry: true,
         website: true,
         description: true,
+        properties: true,
         connections: true,
         createdAt: true,
         updatedAt: true,

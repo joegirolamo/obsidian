@@ -11,60 +11,60 @@
       "static/chunks/main-app.js",
       "static/chunks/app/admin/layout.js"
     ],
-    "/admin/dvcp/layout": [
+    "/admin/business-profile/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/admin/dvcp/layout.js"
-    ],
-    "/admin/dvcp/assessments/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/admin/dvcp/assessments/page.js"
+      "static/chunks/app/admin/business-profile/page.js"
     ],
     "/api/auth/[...nextauth]/route": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/api/auth/[...nextauth]/route.js"
     ],
-    "/admin/dvcp/scorecards/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/admin/dvcp/scorecards/page.js"
-    ],
     "/admin/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/admin/page.js"
     ],
-    "/page": [
+    "/admin/new/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/page.js"
+      "static/chunks/app/admin/new/page.js"
     ],
-    "/admin/business-profile/page": [
+    "/admin/tools-metrics/layout": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/admin/business-profile/page.js"
+      "static/chunks/app/admin/tools-metrics/layout.js"
     ],
-    "/api/verify-access-code/route": [
+    "/admin/tools-metrics/requests/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/api/verify-access-code/route.js"
+      "static/chunks/app/admin/tools-metrics/requests/page.js"
     ],
-    "/portal/[businessId]/layout": [
+    "/admin/tools-metrics/workbook/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/portal/[businessId]/layout.js"
+      "static/chunks/app/admin/tools-metrics/workbook/page.js"
     ],
-    "/portal/[businessId]/metrics/page": [
+    "/admin/dvcp/layout": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/portal/[businessId]/metrics/page.js"
+      "static/chunks/app/admin/dvcp/layout.js"
     ],
-    "/portal/[businessId]/tools/page": [
+    "/admin/dvcp/scorecards/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/portal/[businessId]/tools/page.js"
+      "static/chunks/app/admin/dvcp/scorecards/page.js"
+    ],
+    "/admin/dvcp/opportunities/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/admin/dvcp/opportunities/page.js"
+    ],
+    "/admin/dvcp/assessments/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/admin/dvcp/assessments/page.js"
     ]
   }
 }

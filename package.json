@@ -4,6 +4,7 @@
   "scripts": {
     "build": "cd apps/connect && npm run build",
     "dev": "cd apps/connect && npm run dev",
+    "dev:port": "cd apps/connect && next dev -p",
     "lint": "cd apps/connect && npm run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\""
   },

@@ -10,12 +10,14 @@ import { useSession } from 'next-auth/react';
 import { MetricType } from '@prisma/client';
 import { saveMetricAction, updateMetricAction, deleteMetricAction, createDefaultMetricsAction, createDefaultToolsAction, getBusinessMetricsAction, getBusinessToolsAction, updateToolRequest, deleteAllToolsAction } from '@/app/actions/serverActions';
 import { Eye, EyeOff } from 'lucide-react';
+import Properties from '@/components/admin/Properties';
 
 interface BusinessDetails {
   name: string;
   industry: string;
   website: string;
   description?: string;
+  properties?: string[];
 }
 
 const BusinessProfilePage = () => {
@@ -36,6 +38,8 @@ const BusinessProfilePage = () => {
     website: "",
   });
 
+  const [properties, setProperties] = useState<string[]>([]);
+
   useEffect(() => {
     const fetchBusiness = async () => {
       const businessId = searchParams.get('businessId');
@@ -55,8 +59,10 @@ const BusinessProfilePage = () => {
             industry: result.business.industry || "",
             website: result.business.website || "",
             description: result.business.description || "",
+            properties: result.business.properties || [],
           });
           setBusinessCode(result.business.code);
+          setProperties(result.business.properties || []);
         } else {
           setError(result.error || 'Failed to fetch business details');
         }
@@ -89,6 +95,48 @@ const BusinessProfilePage = () => {
       }
     }
     setShowEditModal(false);
+  };
+
+  const handleAddProperty = async (property: string) => {
+    if (!businessId) return;
+    
+    try {
+      const updatedProperties = [...(properties || []), property];
+      const result = await updateBusinessDetails(businessId, {
+        ...businessDetails,
+        properties: updatedProperties
+      });
+      
+      if (result.success) {
+        setProperties(updatedProperties);
+      } else {
+        setError('Failed to add property');
+      }
+    } catch (error) {
+      console.error('Error adding property:', error);
+      setError('Failed to add property');
+    }
+  };
+
+  const handleRemoveProperty = async (index: number) => {
+    if (!businessId) return;
+    
+    try {
+      const updatedProperties = (properties || []).filter((_, i) => i !== index);
+      const result = await updateBusinessDetails(businessId, {
+        ...businessDetails,
+        properties: updatedProperties
+      });
+      
+      if (result.success) {
+        setProperties(updatedProperties);
+      } else {
+        setError('Failed to remove property');
+      }
+    } catch (error) {
+      console.error('Error removing property:', error);
+      setError('Failed to remove property');
+    }
   };
 
   if (isLoading) {
@@ -199,6 +247,15 @@ const BusinessProfilePage = () => {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Properties Card */}
+      <div className="mt-6">
+        <Properties
+          properties={properties}
+          onAdd={handleAddProperty}
+          onRemove={handleRemoveProperty}
+        />
       </div>
 
       {showEditModal && (
