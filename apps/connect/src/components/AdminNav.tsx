@@ -10,7 +10,9 @@ import {
   FileText,
   Target,
   Building,
-  Plus
+  Plus,
+  Wrench,
+  LineChart
 } from 'lucide-react';
 import ObsidianLogo from './ObsidianLogo';
 import { getBusinessByAdminId } from '@/app/actions/business';
@@ -119,22 +121,23 @@ export default function AdminNav() {
         label: 'BUSINESS',
         href: '/admin/business-profile',
         subItems: [
-          { label: 'Profile', href: '/admin/business-profile', icon: Building }
+          { label: 'Profile', href: '/admin/business-profile', icon: Building },
+          { label: 'Goals & KPIs', href: '/admin/business-profile/goals', icon: Target }
         ]
       },
       {
-        label: 'TOOLS & METRICS',
+        label: 'INTAKE & ACCESS',
         href: '/admin/tools-metrics/requests',
         subItems: [
-          { label: 'Tool Requests', href: '/admin/tools-metrics/requests', icon: Target },
-          { label: 'Metric Workbook', href: '/admin/tools-metrics/workbook', icon: FileText }
+          { label: 'Tool Access', href: '/admin/tools-metrics/requests', icon: Wrench },
+          { label: 'Metric Requests', href: '/admin/tools-metrics/workbook', icon: LineChart },
+          { label: 'Intake Questions', href: '/admin/tools-metrics/intake-questions', icon: FileText }
         ]
       },
       {
         label: 'DVCP',
-        href: '/admin/dvcp/assessments',
+        href: '/admin/dvcp/scorecards',
         subItems: [
-          { label: 'Assessments', href: '/admin/dvcp/assessments', icon: FileText },
           { label: 'Scorecards', href: '/admin/dvcp/scorecards', icon: Target },
           { label: 'Opportunities', href: '/admin/dvcp/opportunities', icon: BarChart2 }
         ]

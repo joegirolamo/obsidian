@@ -12,27 +12,44 @@ export async function updateScorecardCategory(
   }
 ) {
   try {
-    const assessment = await prisma.assessment.upsert({
+    // Find existing scorecard opportunity
+    const existingScorecard = await prisma.opportunity.findFirst({
       where: {
-        businessId_name: {
-          businessId,
-          name: data.name,
-        },
-      },
-      update: {
-        score: data.score,
-        description: data.highlights,
-      },
-      create: {
-        businessId,
-        name: data.name,
-        score: data.score,
-        description: data.highlights,
-      },
+        businessId: businessId,
+        category: data.name,
+        title: { contains: 'Scorecard' }
+      }
     });
 
+    let scorecard;
+    
+    if (existingScorecard) {
+      // Update existing record
+      scorecard = await prisma.opportunity.update({
+        where: {
+          id: existingScorecard.id
+        },
+        data: {
+          title: `${data.name} Scorecard`,
+          description: data.highlights,
+          status: "OPEN",
+        }
+      });
+    } else {
+      // Create new record
+      scorecard = await prisma.opportunity.create({
+        data: {
+          businessId,
+          title: `${data.name} Scorecard`,
+          category: data.name,
+          description: data.highlights,
+          status: "OPEN",
+        }
+      });
+    }
+
     revalidatePath('/admin/scorecard');
-    return { success: true, assessment };
+    return { success: true, scorecard };
   } catch (error) {
     console.error('Failed to update scorecard category:', error);
     return { success: false, error: 'Failed to update scorecard category' };
@@ -41,12 +58,15 @@ export async function updateScorecardCategory(
 
 export async function publishScorecard(businessId: string) {
   try {
-    await prisma.assessment.updateMany({
+    await prisma.opportunity.updateMany({
       where: {
         businessId,
-        name: {
-          in: ['EBITDA', 'Revenue', 'De-Risk'],
+        category: {
+          in: ['Foundation', 'Acquisition', 'Conversion', 'Retention'],
         },
+        title: {
+          contains: 'Scorecard'
+        }
       },
       data: { isPublished: true },
     });
@@ -61,12 +81,15 @@ export async function publishScorecard(businessId: string) {
 
 export async function unpublishScorecard(businessId: string) {
   try {
-    await prisma.assessment.updateMany({
+    await prisma.opportunity.updateMany({
       where: {
         businessId,
-        name: {
-          in: ['EBITDA', 'Revenue', 'De-Risk'],
+        category: {
+          in: ['Foundation', 'Acquisition', 'Conversion', 'Retention'],
         },
+        title: {
+          contains: 'Scorecard'
+        }
       },
       data: { isPublished: false },
     });

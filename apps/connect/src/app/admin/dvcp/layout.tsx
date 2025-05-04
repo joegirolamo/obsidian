@@ -8,7 +8,6 @@ import { redirect } from 'next/navigation';
 import { cn } from '../../../packages/utils';
 
 const subNavigation = [
-  { name: 'Assessments', href: '/admin/dvcp/assessments' },
   { name: 'Scorecards', href: '/admin/dvcp/scorecards' },
   { name: 'Opportunities', href: '/admin/dvcp/opportunities' }
 ];

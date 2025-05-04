@@ -61,9 +61,9 @@ export default function AdminOverviewPage() {
       <div className="mb-8">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="heading-1">Overview</h1>
+            <h1 className="heading-1">Dashboard</h1>
             <p className="text-body mt-2">
-              Dashboard and key metrics
+              Workspace overview and activity
             </p>
           </div>
         </div>
@@ -141,7 +141,6 @@ export default function AdminOverviewPage() {
                   Create Business
                 </button>
               )}
-              <button className="btn-secondary w-full">Manage Assessments</button>
             </div>
           </div>
         </div>

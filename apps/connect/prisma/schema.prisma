@@ -100,7 +100,6 @@ model Business {
   clientPortal ClientPortal?
   metrics     Metric[]
   tools       Tool[]
-  assessments Assessment[]
   opportunities Opportunity[]
 }
 
@@ -167,21 +166,6 @@ model ToolAccess {
   updatedAt     DateTime @updatedAt
 
   @@unique([toolId, clientPortalId])
-}
-
-model Assessment {
-  id          String   @id @default(cuid())
-  name        String
-  description String?
-  score       Float?
-  scores      String?  // JSON string to store individual question scores
-  businessId  String
-  business    Business @relation(fields: [businessId], references: [id])
-  isPublished Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  @@unique([businessId, name])
 }
 
 model Opportunity {

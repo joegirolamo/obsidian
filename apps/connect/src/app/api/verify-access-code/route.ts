@@ -28,10 +28,6 @@ export async function POST(request: Request) {
       where: { code },
       select: {
         id: true,
-        assessments: {
-          where: { isPublished: true },
-          select: { id: true },
-        },
         opportunities: {
           where: { isPublished: true },
           select: { id: true },
@@ -69,9 +65,7 @@ export async function POST(request: Request) {
     }
 
     // Check if there are any published items
-    const hasPublishedItems = 
-      business.assessments.length > 0 || 
-      business.opportunities.length > 0;
+    const hasPublishedItems = business.opportunities.length > 0;
 
     return NextResponse.json({ 
       businessId: business.id,

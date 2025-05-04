@@ -8,8 +8,9 @@ import { redirect } from 'next/navigation';
 import { cn } from '../../../packages/utils';
 
 const subNavigation = [
-  { name: 'Tool Requests', href: '/admin/tools-metrics/requests' },
-  { name: 'Metric Workbook', href: '/admin/tools-metrics/workbook' }
+  { name: 'Tool Access', href: '/admin/tools-metrics/requests' },
+  { name: 'Metric Requests', href: '/admin/tools-metrics/workbook' },
+  { name: 'Intake Questions', href: '/admin/tools-metrics/intake-questions' }
 ];
 
 export default function ToolsMetricsLayout({

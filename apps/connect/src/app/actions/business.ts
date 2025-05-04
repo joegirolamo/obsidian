@@ -132,6 +132,20 @@ export async function createBusiness(
   try {
     console.log('Starting business creation with data:', data);
     
+    // Check if user exists, create if not
+    const user = await prisma.user.upsert({
+      where: { id: data.adminId },
+      update: {},
+      create: {
+        id: data.adminId,
+        name: 'Admin User',
+        email: 'admin@example.com',
+        role: 'ADMIN'
+      }
+    });
+
+    console.log('User check/creation result:', user);
+    
     const code = generateAccessCode();
     console.log('Generated access code for new business:', code);
     

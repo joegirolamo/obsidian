@@ -2,7 +2,7 @@
 
 import ToolAccessRequests from '@/components/ToolAccessRequests';
 
-export default function ToolRequestsPage() {
+export default function ToolAccessPage() {
   return (
     <div className="card">
       <div className="card-body">

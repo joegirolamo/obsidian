@@ -4,7 +4,6 @@ async function getBusinessData(businessId: string) {
   const business = await prisma.business.findUnique({
     where: { id: businessId },
     include: {
-      assessments: true,
       opportunities: true,
     },
   });
@@ -31,29 +30,6 @@ export default async function Dashboard({
           <p className="text-gray-600 mt-2">
             Track your business performance and growth opportunities
           </p>
-        </div>
-
-        {/* Assessments Section */}
-        <div className="grid gap-6 mb-8">
-          <h2 className="text-xl font-semibold">Assessments</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {["Performance", "Marketing Tech", "Creative", "SEO"].map(
-              (category) => (
-                <div
-                  key={category}
-                  className="bg-white p-4 rounded-lg shadow-sm border"
-                >
-                  <h3 className="font-medium text-gray-900 mb-2">{category}</h3>
-                  <div className="flex items-center justify-between">
-                    <div className="text-sm text-gray-500">0 insights</div>
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                      In Progress
-                    </span>
-                  </div>
-                </div>
-              )
-            )}
-          </div>
         </div>
 
         {/* Scorecard Section */}

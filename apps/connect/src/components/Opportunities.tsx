@@ -69,21 +69,21 @@ export default function Opportunities() {
 
   return (
     <div className="grid grid-cols-2 gap-6">
-      {opportunities.map((opportunity) => (
+          {opportunities.map((opportunity) => (
         <div key={opportunity.id} className="card">
           <div className="card-header">
             <div className="flex items-center justify-between">
               <h2 className="heading-2">{opportunity.title}</h2>
-              <div className="flex items-center gap-2">
-                <Badge variant={getPriorityColor(opportunity.priority)}>
+                <div className="flex items-center gap-2">
+                  <Badge variant={getPriorityColor(opportunity.priority)}>
                   {opportunity.priority}
-                </Badge>
-                <Badge variant={getStatusColor(opportunity.status)}>
+                  </Badge>
+                  <Badge variant={getStatusColor(opportunity.status)}>
                   {opportunity.status}
-                </Badge>
+                  </Badge>
+                </div>
               </div>
-            </div>
-          </div>
+                </div>
           <div className="card-body">
             <p className="text-gray-600 mb-4">{opportunity.description}</p>
             <div className="flex items-center justify-between">
