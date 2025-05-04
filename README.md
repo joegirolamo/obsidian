@@ -1,66 +1,24 @@
-# Obsidian
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-Obsidian is a platform for digital marketing analytics and management.
+## Getting Started
 
-## Project Architecture
-
-The project is structured as follows:
-
-```
-obsidian/
-├── src/                    # All source code
-│   ├── app/                # Next.js app router routes
-│   │   ├── admin/          # Admin area routes
-│   │   ├── portal/         # Client portal routes
-│   │   ├── api/            # API routes
-│   │   └── auth/           # Auth related routes
-│   ├── components/         # Shared components
-│   │   ├── admin/          # Admin-specific components
-│   │   ├── portal/         # Portal-specific components
-│   │   ├── shared/         # Components used in both areas
-│   │   └── integrations/   # Third-party integration components
-│   ├── lib/                # Utility libraries
-│   ├── hooks/              # Custom React hooks
-│   ├── styles/             # Global styles
-│   └── types/              # TypeScript type definitions
-├── prisma/                 # Database schema and migrations
-├── public/                 # Static assets
-├── package.json
-└── tsconfig.json
-```
-
-## Development
-
-To run the development server:
+First, run the development server:
 
 ```bash
 npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-## Directory Structure
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-- `admin`: Admin interface for managing businesses, metrics, and content
-- `portal`: Client portal for accessing business insights and tools
-- `api`: API endpoints for data exchange
-- `auth`: Authentication and authorization routes
-
-## Component Organization
-
-Components are organized into the following categories:
-- `admin`: Components exclusively used in the admin interface
-- `portal`: Components exclusively used in the client portal
-- `shared`: Components used in both admin and portal areas
-- `integrations`: Components for third-party integrations like Google Analytics, Meta Ads, etc.
-
-## Packages
-
-The project uses the following key packages:
-- Next.js for the framework
-- Prisma for database ORM
-- NextAuth for authentication
-- TailwindCSS for styling
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
 ## Learn More
 

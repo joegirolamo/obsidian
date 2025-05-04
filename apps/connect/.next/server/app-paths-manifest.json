@@ -1,0 +1,11 @@
+{
+  "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js",
+  "/api/verify-access-code/route": "app/api/verify-access-code/route.js",
+  "/page": "app/page.js",
+  "/portal/[businessId]/metrics/page": "app/portal/[businessId]/metrics/page.js",
+  "/portal/[businessId]/tools/page": "app/portal/[businessId]/tools/page.js",
+  "/admin/dvcp/opportunities/page": "app/admin/dvcp/opportunities/page.js",
+  "/admin/business-profile/page": "app/admin/business-profile/page.js",
+  "/admin/tools-metrics/intake-questions/page": "app/admin/tools-metrics/intake-questions/page.js",
+  "/admin/dvcp/scorecards/page": "app/admin/dvcp/scorecards/page.js"
+}
