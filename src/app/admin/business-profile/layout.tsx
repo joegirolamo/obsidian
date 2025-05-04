@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { cn } from '../../../packages/utils';
+import { cn } from "@obsidian/utils";
 
 const subNavigation = [
   { name: 'Profile', href: '/admin/business-profile' },

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useParams } from 'next/navigation';
 import { updateScorecardCategory, publishScorecard } from '@/app/actions/scorecard';
-import PublishToggle from '@/components/PublishToggle';
+import PublishToggle from '@/components/shared/PublishToggle';
 
 export default function ScorecardPage() {
   // The error is likely happening because businessId is undefined

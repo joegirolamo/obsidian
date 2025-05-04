@@ -1,6 +1,6 @@
 'use client';
 
-import ToolAccessRequests from '@/components/ToolAccessRequests';
+import ToolAccessRequests from '@/components/admin/ToolAccessRequests';
 
 export default function ToolAccessPage() {
   return (

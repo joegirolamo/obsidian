@@ -1,6 +1,6 @@
 "use client";
 
-import AdminNav from '@/components/AdminNav';
+import AdminNav from '@/components/admin/AdminNav';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';

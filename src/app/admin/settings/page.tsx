@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import Notification from '@/components/Notification';
+import Notification from '@/components/shared/Notification';
 
 interface AgencyTool {
   name: string;

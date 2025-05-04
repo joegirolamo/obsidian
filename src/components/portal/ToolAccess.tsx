@@ -1,10 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import Card from '../packages/ui/src/components/Card';
-import Heading from '../packages/ui/src/components/Heading';
-import Button from '../packages/ui/src/components/Button';
-import Badge from '../packages/ui/src/components/Badge';
+import Card from '@/components/shared/Card';
+import Heading from "@obsidian/ui/Heading";
+import Button from '@/components/shared/Button';
+import Badge from "@obsidian/ui/Badge";
 
 interface Tool {
   name: string;

@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import ObsidianLogo from '@/components/ObsidianLogo';
+import ObsidianLogo from '@/components/shared/ObsidianLogo';
 import { PortalStepper } from './PortalStepper';
 
 export default function PortalLayout({

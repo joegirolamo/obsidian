@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { signIn } from 'next-auth/react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import ObsidianLogo from '@/components/ObsidianLogo';
+import ObsidianLogo from '@/components/shared/ObsidianLogo';
 
 export default function SignIn() {
   const router = useRouter();

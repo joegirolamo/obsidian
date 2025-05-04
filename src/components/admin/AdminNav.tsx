@@ -14,7 +14,7 @@ import {
   Wrench,
   LineChart
 } from 'lucide-react';
-import ObsidianLogo from './ObsidianLogo';
+import ObsidianLogo from '../shared/ObsidianLogo';
 import { getBusinessByAdminId } from '@/app/actions/business';
 
 interface Business {

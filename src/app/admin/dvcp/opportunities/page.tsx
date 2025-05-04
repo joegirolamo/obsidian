@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { PlusCircle, Lightbulb, Sparkles, X } from 'lucide-react';
-import Button from '../../../../packages/ui/src/components/Button';
+import Button from '@/components/shared/Button';
 
 // Define the sparkle gradient icon as a custom component
 const SparkleGradientIcon = ({className}: {className?: string}) => (

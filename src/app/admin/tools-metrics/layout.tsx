@@ -5,7 +5,7 @@ import { usePathname, useSearchParams } from 'next/navigation';
 import { ReactNode } from 'react';
 import { useSession } from 'next-auth/react';
 import { redirect } from 'next/navigation';
-import { cn } from '../../../packages/utils';
+import { cn } from "@obsidian/utils";
 
 const subNavigation = [
   { name: 'Tool Access', href: '/admin/tools-metrics/requests' },

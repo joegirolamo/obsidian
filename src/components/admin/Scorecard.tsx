@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { PlusCircle, BarChart2, AlertCircle, Zap, ChevronUp, ChevronDown, X } from 'lucide-react';
-import Button from '../packages/ui/src/components/Button';
+import Button from '@/components/shared/Button';
 
 interface Highlight {
   id: string;

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import Notification from '@/components/Notification';
+import Notification from '@/components/shared/Notification';
 
 interface Tool {
   name: string;

@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import Card from '../../../../packages/ui/src/components/Card';
-import Button from '../../../../packages/ui/src/components/Button';
+import Card from '@/components/shared/Card';
+import Button from '@/components/shared/Button';
 import { Plus, MessageSquare } from 'lucide-react';
 
 interface Question {

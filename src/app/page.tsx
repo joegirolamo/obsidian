@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import ObsidianLogo from "@/components/ObsidianLogo";
+import ObsidianLogo from '@/components/shared/ObsidianLogo';
 
 export default function AccessCodeEntry() {
   const [accessCode, setAccessCode] = useState("");

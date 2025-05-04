@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useParams } from 'next/navigation';
 import { Plus, Trash2 } from "lucide-react";
 import { createOpportunity, deleteOpportunity, publishOpportunities } from '@/app/actions/opportunity';
-import PublishToggle from '@/components/PublishToggle';
+import PublishToggle from '@/components/shared/PublishToggle';
 
 interface OpportunityForm {
   title: string;

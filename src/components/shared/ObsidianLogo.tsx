@@ -1,6 +1,6 @@
 'use client';
 
-import { cn } from '../packages/utils';
+import { cn } from "@obsidian/utils";
 
 interface ObsidianLogoProps {
   className?: string;
