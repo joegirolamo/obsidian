@@ -57,9 +57,7 @@ export interface PageProps {
 }
 export interface LayoutProps {
   children?: React.ReactNode
-  auth: React.ReactNode
-  dashboard: React.ReactNode
-  portal: React.ReactNode
+
   params?: Promise<SegmentParams>
 }
 

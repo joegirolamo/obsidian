@@ -11,41 +11,6 @@
       "static/chunks/main-app.js",
       "static/chunks/app/admin/layout.js"
     ],
-    "/admin/business-profile/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/admin/business-profile/page.js"
-    ],
-    "/api/auth/[...nextauth]/route": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/api/auth/[...nextauth]/route.js"
-    ],
-    "/admin/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/admin/page.js"
-    ],
-    "/admin/new/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/admin/new/page.js"
-    ],
-    "/admin/tools-metrics/layout": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/admin/tools-metrics/layout.js"
-    ],
-    "/admin/tools-metrics/requests/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/admin/tools-metrics/requests/page.js"
-    ],
-    "/admin/tools-metrics/workbook/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/admin/tools-metrics/workbook/page.js"
-    ],
     "/admin/dvcp/layout": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
@@ -56,35 +21,15 @@
       "static/chunks/main-app.js",
       "static/chunks/app/admin/dvcp/scorecards/page.js"
     ],
+    "/api/auth/[...nextauth]/route": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/api/auth/[...nextauth]/route.js"
+    ],
     "/admin/dvcp/opportunities/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/admin/dvcp/opportunities/page.js"
-    ],
-    "/admin/business-profile/layout": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/admin/business-profile/layout.js"
-    ],
-    "/admin/business-profile/goals/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/admin/business-profile/goals/page.js"
-    ],
-    "/admin/settings/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/admin/settings/page.js"
-    ],
-    "/api/admin/tool-configurations/route": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/api/admin/tool-configurations/route.js"
-    ],
-    "/admin/tools-metrics/intake-questions/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/admin/tools-metrics/intake-questions/page.js"
     ],
     "/portal/[businessId]/layout": [
       "static/chunks/webpack.js",
@@ -96,6 +41,21 @@
       "static/chunks/main-app.js",
       "static/chunks/app/portal/[businessId]/metrics/page.js"
     ],
+    "/portal/[businessId]/tools/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/portal/[businessId]/tools/page.js"
+    ],
+    "/portal/[businessId]/questions/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/portal/[businessId]/questions/page.js"
+    ],
+    "/api/portal/intake-questions/route": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/api/portal/intake-questions/route.js"
+    ],
     "/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
@@ -106,10 +66,45 @@
       "static/chunks/main-app.js",
       "static/chunks/app/api/verify-access-code/route.js"
     ],
-    "/portal/[businessId]/tools/page": [
+    "/portal/[businessId]/dashboard/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/portal/[businessId]/tools/page.js"
+      "static/chunks/app/portal/[businessId]/dashboard/page.js"
+    ],
+    "/api/portal/[businessId]/publish-status/route": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/api/portal/[businessId]/publish-status/route.js"
+    ],
+    "/admin/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/admin/page.js"
+    ],
+    "/admin/tools-metrics/layout": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/admin/tools-metrics/layout.js"
+    ],
+    "/admin/tools-metrics/requests/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/admin/tools-metrics/requests/page.js"
+    ],
+    "/admin/tools-metrics/intake-questions/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/admin/tools-metrics/intake-questions/page.js"
+    ],
+    "/api/user/route": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/api/user/route.js"
+    ],
+    "/api/intake-questions/route": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/api/intake-questions/route.js"
     ]
   }
 }

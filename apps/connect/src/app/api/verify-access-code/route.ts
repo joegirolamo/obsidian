@@ -28,15 +28,14 @@ export async function POST(request: Request) {
       where: { code },
       select: {
         id: true,
-        opportunities: {
-          where: { isPublished: true },
+        isScorecardPublished: true,
+        isOpportunitiesPublished: true,
+        clientPortals: {
+          where: { clientId: session.user.id },
           select: { id: true },
         },
-        clientPortal: true,
         tools: {
-          select: {
-            id: true
-          }
+          select: { id: true }
         }
       },
     });
@@ -49,7 +48,7 @@ export async function POST(request: Request) {
     }
 
     // Create client portal if it doesn't exist
-    if (!business.clientPortal) {
+    if (!business.clientPortals.length) {
       await prisma.clientPortal.create({
         data: {
           businessId: business.id,
@@ -65,11 +64,15 @@ export async function POST(request: Request) {
     }
 
     // Check if there are any published items
-    const hasPublishedItems = business.opportunities.length > 0;
+    const hasPublishedItems = business.isScorecardPublished || business.isOpportunitiesPublished;
 
     return NextResponse.json({ 
       businessId: business.id,
-      hasPublishedItems
+      hasPublishedItems,
+      publishedTypes: {
+        scorecard: business.isScorecardPublished,
+        opportunities: business.isOpportunitiesPublished
+      }
     });
   } catch (error) {
     console.error("Error verifying access code:", error);

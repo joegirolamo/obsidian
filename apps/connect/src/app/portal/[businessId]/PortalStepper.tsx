@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 export const steps = [
   { id: 'metrics', label: 'Business Metrics' },
   { id: 'tools', label: 'Tool Access' },
-  { id: 'thank-you', label: 'Complete' },
+  { id: 'questions', label: 'Questions' },
 ];
 
 export function useStepNavigation() {

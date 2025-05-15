@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
+import { useSession, signOut } from 'next-auth/react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Notification from '@/components/Notification';
+import Button from '@/components/Button';
 
 interface AgencyTool {
   name: string;
@@ -93,10 +94,20 @@ export default function SettingsPage() {
       {showNotification && <Notification onClose={handleNotificationClose} />}
       
       <div className="mb-8">
-        <h1 className="heading-1">Agency Settings</h1>
-        <p className="text-body mt-2">
-          View the configuration status of your agency's tool connections
-        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="heading-1">Agency Settings</h1>
+            <p className="text-body mt-2">
+              View the configuration status of your agency's tool connections
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            onClick={() => signOut({ callbackUrl: '/auth/signin' })}
+          >
+            Sign Out
+          </Button>
+        </div>
       </div>
 
       <div className="card">

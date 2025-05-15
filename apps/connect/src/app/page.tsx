@@ -2,7 +2,20 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import ObsidianLogo from "@/components/ObsidianLogo";
+import ObsidianLogo from '@/components/ObsidianLogo';
+
+interface VerifyResponse {
+  businessId: string;
+  hasPublishedItems: boolean;
+  publishedTypes: {
+    scorecard: boolean;
+    opportunities: boolean;
+  };
+}
+
+interface ErrorResponse {
+  error: string;
+}
 
 export default function AccessCodeEntry() {
   const [accessCode, setAccessCode] = useState("");
@@ -27,14 +40,15 @@ export default function AccessCodeEntry() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Invalid access code");
+        throw new Error((data as ErrorResponse).error || "Invalid access code");
       }
 
       // Redirect based on whether there are published items
-      if (data.hasPublishedItems) {
-        router.push(`/portal/${data.businessId}/dashboard`);
+      const verifiedData = data as VerifyResponse;
+      if (verifiedData.hasPublishedItems) {
+        router.push(`/portal/${verifiedData.businessId}/dashboard`);
       } else {
-        router.push(`/portal/${data.businessId}/metrics`);
+        router.push(`/portal/${verifiedData.businessId}/metrics`);
       }
     } catch (err) {
       setError("Invalid access code. Please try again.");

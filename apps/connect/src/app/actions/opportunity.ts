@@ -73,12 +73,13 @@ export async function deleteOpportunity(opportunityId: string) {
 
 export async function publishOpportunities(businessId: string) {
   try {
-    await prisma.opportunity.updateMany({
-      where: { businessId },
-      data: { isPublished: true },
+    await prisma.business.update({
+      where: { id: businessId },
+      data: { isOpportunitiesPublished: true }
     });
-
+    
     revalidatePath('/admin/opportunities');
+    revalidatePath(`/portal/${businessId}/dashboard`);
     return { success: true };
   } catch (error) {
     console.error('Failed to publish opportunities:', error);
@@ -88,15 +89,34 @@ export async function publishOpportunities(businessId: string) {
 
 export async function unpublishOpportunities(businessId: string) {
   try {
-    await prisma.opportunity.updateMany({
-      where: { businessId },
-      data: { isPublished: false },
+    await prisma.business.update({
+      where: { id: businessId },
+      data: { isOpportunitiesPublished: false }
     });
-
+    
     revalidatePath('/admin/opportunities');
+    revalidatePath(`/portal/${businessId}/dashboard`);
     return { success: true };
   } catch (error) {
     console.error('Failed to unpublish opportunities:', error);
     return { success: false, error: 'Failed to unpublish opportunities' };
+  }
+}
+
+export async function getOpportunitiesPublishStatus(businessId: string) {
+  try {
+    const business = await prisma.business.findUnique({
+      where: { id: businessId },
+      select: { isOpportunitiesPublished: true }
+    });
+    
+    if (!business) {
+      throw new Error('Business not found');
+    }
+
+    return { success: true, isPublished: business.isOpportunitiesPublished };
+  } catch (error) {
+    console.error('Failed to get opportunities publish status:', error);
+    return { success: false, error: 'Failed to get opportunities publish status' };
   }
 } 

@@ -4,8 +4,21 @@ import AdminNav from '@/components/AdminNav';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import { SessionProvider } from 'next-auth/react';
 
 export default function AdminLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <SessionProvider>
+      <AdminLayoutContent>{children}</AdminLayoutContent>
+    </SessionProvider>
+  );
+}
+
+function AdminLayoutContent({
   children,
 }: {
   children: React.ReactNode;

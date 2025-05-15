@@ -18,8 +18,65 @@ interface KPI {
 }
 
 export default function GoalsPage() {
-  const [goals, setGoals] = useState<Goal[]>([]);
-  const [kpis, setKPIs] = useState<KPI[]>([]);
+  const [goals, setGoals] = useState<Goal[]>([
+    {
+      id: '1',
+      name: 'Increase Revenue by 20%',
+      description: 'Achieve 20% revenue growth through improved conversion rates and customer retention'
+    },
+    {
+      id: '2',
+      name: 'Reduce Customer Acquisition Cost',
+      description: 'Lower CAC by optimizing marketing channels and improving lead quality'
+    },
+    {
+      id: '3',
+      name: 'Improve Conversion Rate',
+      description: 'Increase website and landing page conversion rates by 15%'
+    },
+    {
+      id: '4',
+      name: 'Expand Market Share',
+      description: 'Grow market presence in target segments by 25%'
+    },
+    {
+      id: '5',
+      name: 'Enhance Customer Retention',
+      description: 'Improve customer loyalty and reduce churn rate by 10%'
+    }
+  ]);
+  const [kpis, setKPIs] = useState<KPI[]>([
+    {
+      id: '1',
+      name: 'Monthly Recurring Revenue (MRR)',
+      description: 'Total predictable revenue generated each month'
+    },
+    {
+      id: '2',
+      name: 'Customer Acquisition Cost (CAC)',
+      description: 'Average cost to acquire a new customer'
+    },
+    {
+      id: '3',
+      name: 'Conversion Rate',
+      description: 'Percentage of visitors who complete desired actions'
+    },
+    {
+      id: '4',
+      name: 'Customer Lifetime Value (CLV)',
+      description: 'Predicted net profit attributed to the entire future relationship with a customer'
+    },
+    {
+      id: '5',
+      name: 'Churn Rate',
+      description: 'Percentage of customers who stop using the product/service'
+    },
+    {
+      id: '6',
+      name: 'Net Promoter Score (NPS)',
+      description: 'Measure of customer loyalty and satisfaction'
+    }
+  ]);
   const [isAddingGoal, setIsAddingGoal] = useState(false);
   const [isAddingKPI, setIsAddingKPI] = useState(false);
   const [newGoal, setNewGoal] = useState({ name: '', description: '' });

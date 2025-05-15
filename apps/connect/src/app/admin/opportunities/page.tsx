@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Plus, Trash2 } from "lucide-react";
-import { createOpportunity, deleteOpportunity, publishOpportunities } from '@/app/actions/opportunity';
+import { createOpportunity, deleteOpportunity, publishOpportunities, unpublishOpportunities, getOpportunitiesPublishStatus } from '@/app/actions/opportunity';
 import PublishToggle from '@/components/PublishToggle';
 
 interface OpportunityForm {
@@ -12,20 +12,53 @@ interface OpportunityForm {
 }
 
 interface OpportunityData extends OpportunityForm {
-  id?: string;
+  id: string;
 }
 
 export default function OpportunitiesPage() {
-  const params = useParams();
-  const businessId = params.businessId as string;
-  const [isPublishing, setIsPublishing] = useState(false);
+  const searchParams = useSearchParams();
+  const businessId = searchParams.get('businessId');
+  
+  if (!businessId) {
+    console.error('No business ID found in query parameters');
+    return <div>Error: No business ID found</div>;
+  }
+
   const [isPublished, setIsPublished] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [opportunities, setOpportunities] = useState<Record<string, OpportunityData[]>>({
     EBITDA: [],
     Revenue: [],
     'De-Risk': [],
   });
   const [forms, setForms] = useState<Record<string, OpportunityForm>>({});
+
+  // Load initial publish status
+  useEffect(() => {
+    const loadPublishStatus = async () => {
+      const result = await getOpportunitiesPublishStatus(businessId);
+      if (result.success) {
+        setIsPublished(result.isPublished ?? false);
+      }
+    };
+
+    loadPublishStatus();
+  }, [businessId]);
+
+  const handlePublishToggle = async () => {
+    setIsLoading(true);
+    try {
+      const result = isPublished 
+        ? await unpublishOpportunities(businessId)
+        : await publishOpportunities(businessId);
+        
+      if (result.success) {
+        setIsPublished(!isPublished);
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const categories = ["EBITDA", "Revenue", "De-Risk"];
 
@@ -59,7 +92,6 @@ export default function OpportunitiesPage() {
         [category]: { title: '', description: '' },
       }));
     } else {
-      // Handle error
       console.error(result.error);
     }
   };
@@ -72,23 +104,7 @@ export default function OpportunitiesPage() {
         [category]: prev[category].filter((opp) => opp.id !== opportunityId),
       }));
     } else {
-      // Handle error
       console.error(result.error);
-    }
-  };
-
-  const handlePublishToggle = async () => {
-    setIsPublishing(true);
-    try {
-      const result = await publishOpportunities(businessId);
-      if (!result.success) {
-        // Handle error
-        console.error(result.error);
-      } else {
-        setIsPublished(!isPublished);
-      }
-    } finally {
-      setIsPublishing(false);
     }
   };
 
@@ -106,7 +122,7 @@ export default function OpportunitiesPage() {
             <PublishToggle
               isPublished={isPublished}
               onToggle={handlePublishToggle}
-              isLoading={isPublishing}
+              isLoading={isLoading}
             />
           </div>
         </div>
@@ -123,63 +139,57 @@ export default function OpportunitiesPage() {
                 </h3>
               </div>
               <div className="px-4 py-5 sm:p-6">
-                <div className="space-y-4">
-                  {/* Existing Opportunities */}
-                  {opportunities[category]?.map((opportunity) => (
-                    <div key={opportunity.id} className="border border-gray-200 rounded-lg p-4">
-                      <div className="flex justify-between items-start">
-                        <div className="flex-1">
-                          <h4 className="text-sm font-medium text-gray-900">{opportunity.title}</h4>
-                          <p className="mt-1 text-sm text-gray-500">{opportunity.description}</p>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => opportunity.id && handleDeleteOpportunity(category, opportunity.id)}
-                          className="ml-2 text-gray-400 hover:text-gray-500"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-
-                  {/* Add New Opportunity Form */}
-                  <div className="border border-gray-200 rounded-lg p-4">
-                    <div className="space-y-2">
-                      <label className="block text-sm font-medium text-gray-700">
-                        Opportunity Title
-                      </label>
-                      <input
-                        type="text"
-                        value={forms[category]?.title || ''}
-                        onChange={(e) => handleFormChange(category, 'title', e.target.value)}
-                        className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                        placeholder="Enter title..."
-                      />
-                    </div>
-                    <div className="mt-4 space-y-2">
-                      <label className="block text-sm font-medium text-gray-700">
-                        Description
-                      </label>
-                      <textarea
-                        rows={3}
-                        value={forms[category]?.description || ''}
-                        onChange={(e) => handleFormChange(category, 'description', e.target.value)}
-                        className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                        placeholder="Enter description..."
-                      />
-                    </div>
+                <div className="space-y-6">
+                  {/* Add new opportunity form */}
+                  <div className="space-y-4">
+                    <input
+                      type="text"
+                      placeholder="Title"
+                      value={forms[category]?.title || ''}
+                      onChange={(e) => handleFormChange(category, 'title', e.target.value)}
+                      className="input"
+                    />
+                    <textarea
+                      placeholder="Description"
+                      value={forms[category]?.description || ''}
+                      onChange={(e) => handleFormChange(category, 'description', e.target.value)}
+                      className="input"
+                      rows={3}
+                    />
+                    <button
+                      onClick={() => handleAddOpportunity(category)}
+                      className="button button-primary w-full flex items-center justify-center"
+                      disabled={!forms[category]?.title || !forms[category]?.description}
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Opportunity
+                    </button>
                   </div>
 
-                  {/* Add Opportunity Button */}
-                  <button
-                    type="button"
-                    onClick={() => handleAddOpportunity(category)}
-                    className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                  >
-                    <Plus className="h-5 w-5 mr-2 text-gray-400" />
-                    Add Opportunity
-                  </button>
+                  {/* List of opportunities */}
+                  <div className="space-y-4">
+                    {opportunities[category]?.map((opportunity) => (
+                      <div
+                        key={opportunity.id}
+                        className="bg-gray-50 p-4 rounded-lg space-y-2"
+                      >
+                        <div className="flex items-start justify-between">
+                          <h4 className="text-sm font-medium text-gray-900">
+                            {opportunity.title}
+                          </h4>
+                          <button
+                            onClick={() => handleDeleteOpportunity(category, opportunity.id)}
+                            className="text-gray-400 hover:text-gray-500"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                        <p className="text-sm text-gray-500">
+                          {opportunity.description}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>

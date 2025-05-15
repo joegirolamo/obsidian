@@ -1,43 +1,103 @@
 'use client';
 
-import { useState } from 'react';
-import { useParams } from 'next/navigation';
-import { updateScorecardCategory, publishScorecard } from '@/app/actions/scorecard';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { updateScorecardCategory, publishScorecard, unpublishScorecard, getScorecardPublishStatus } from '@/app/actions/scorecard';
 import PublishToggle from '@/components/PublishToggle';
 
 export default function ScorecardPage() {
-  // The error is likely happening because businessId is undefined
-  // Let's provide a default value for testing or development
-  const params = useParams();
-  const businessId = params?.businessId as string || "default-business-id";
+  const searchParams = useSearchParams();
+  const businessId = searchParams.get('businessId');
   
-  const [isPublishing, setIsPublishing] = useState(false);
+  if (!businessId) {
+    console.error('No business ID found in query parameters');
+    return <div>Error: No business ID found</div>;
+  }
+
   const [isPublished, setIsPublished] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [highlights, setHighlights] = useState<Record<string, string>>({});
   const [scores, setScores] = useState<Record<string, number>>({
-    EBITDA: 4,
-    Revenue: 7,
-    'De-Risk': 6,
+    Foundation: 75,
+    Acquisition: 82,
+    Conversion: 65,
+    Retention: 70,
   });
+  const [saveStatus, setSaveStatus] = useState<Record<string, string>>({});
+
+  // Debug log when component mounts
+  useEffect(() => {
+    console.log('[DEBUG] ScorecardPage mounted with businessId:', businessId);
+  }, [businessId]);
+
+  // Debug log when isPublished changes
+  useEffect(() => {
+    console.log('[DEBUG] isPublished changed to:', isPublished);
+  }, [isPublished]);
+
+  // Load initial publish status
+  useEffect(() => {
+    const loadPublishStatus = async () => {
+      console.log('[DEBUG] Loading publish status for businessId:', businessId);
+      const result = await getScorecardPublishStatus(businessId);
+      console.log('[DEBUG] Got publish status result:', result);
+      if (result.success) {
+        const newState = result.isPublished ?? false;
+        console.log('[DEBUG] Setting isPublished to:', newState);
+        setIsPublished(newState);
+      }
+    };
+
+    loadPublishStatus();
+  }, [businessId]);
+
+  const handlePublishToggle = async () => {
+    console.log('[DEBUG] Toggle clicked. Current state:', isPublished);
+    setIsLoading(true);
+    try {
+      const result = isPublished 
+        ? await unpublishScorecard(businessId)
+        : await publishScorecard(businessId);
+      
+      console.log('[DEBUG] Toggle result:', result);  
+      if (result.success) {
+        const newState = !isPublished;
+        console.log('[DEBUG] Setting new state to:', newState);
+        setIsPublished(newState);
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const categories = [
-    { name: "EBITDA", maxScore: 10 },
-    { name: "Revenue", maxScore: 10 },
-    { name: "De-Risk", maxScore: 10 },
+    { name: "Foundation", maxScore: 100 },
+    { name: "Acquisition", maxScore: 100 },
+    { name: "Conversion", maxScore: 100 },
+    { name: "Retention", maxScore: 100 },
   ];
 
   const handleHighlightChange = (category: string, value: string) => {
+    console.log('[DEBUG] Highlight changed for', category, ':', value);
     setHighlights((prev) => ({ ...prev, [category]: value }));
   };
 
   const handleScoreChange = (category: string, value: number) => {
+    console.log('[DEBUG] Score changed for', category, ':', value);
     setScores((prev) => ({ ...prev, [category]: value }));
   };
 
   const handleCategorySubmit = async (category: string) => {
     try {
-      // Add error handling and logging
-      console.log("Submitting category:", category, "for business:", businessId);
+      console.log('[DEBUG] Submitting category:', category);
+      console.log('[DEBUG] With data:', {
+        businessId,
+        name: category,
+        score: scores[category] || 0,
+        highlights: highlights[category] || '',
+      });
+      
+      setSaveStatus((prev) => ({ ...prev, [category]: 'Saving...' }));
       
       const result = await updateScorecardCategory(businessId, {
         name: category,
@@ -45,27 +105,23 @@ export default function ScorecardPage() {
         highlights: highlights[category] || '',
       });
       
+      console.log('[DEBUG] Category submit result:', result);
+      
       if (!result.success) {
-        console.error("Error updating scorecard category:", result.error);
+        console.error("[DEBUG] Error updating scorecard category:", result.error);
+        setSaveStatus((prev) => ({ ...prev, [category]: 'Error!' }));
       } else {
-        console.log("Successfully updated scorecard category");
+        console.log('[DEBUG] Category saved successfully');
+        setSaveStatus((prev) => ({ ...prev, [category]: 'Saved!' }));
+        
+        // Clear status after 3 seconds
+        setTimeout(() => {
+          setSaveStatus((prev) => ({ ...prev, [category]: '' }));
+        }, 3000);
       }
     } catch (error) {
-      console.error("Exception in handleCategorySubmit:", error);
-    }
-  };
-
-  const handlePublishToggle = async () => {
-    setIsPublishing(true);
-    try {
-      const result = await publishScorecard(businessId);
-      if (!result.success) {
-        console.error("Error publishing scorecard:", result.error);
-      } else {
-        setIsPublished(!isPublished);
-      }
-    } finally {
-      setIsPublishing(false);
+      console.error("[DEBUG] Exception in handleCategorySubmit:", error);
+      setSaveStatus((prev) => ({ ...prev, [category]: 'Error!' }));
     }
   };
 
@@ -82,12 +138,12 @@ export default function ScorecardPage() {
           <PublishToggle
             isPublished={isPublished}
             onToggle={handlePublishToggle}
-            isLoading={isPublishing}
+            isLoading={isLoading}
           />
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {categories.map((category) => (
           <div
             key={category.name}
@@ -98,46 +154,36 @@ export default function ScorecardPage() {
             </div>
             <div className="card-body">
               <div className="space-y-4">
-                <div className="flex items-baseline justify-between">
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="number"
-                      min="0"
-                      max={category.maxScore}
-                      value={scores[category.name] || 0}
-                      onChange={(e) => handleScoreChange(category.name, parseInt(e.target.value, 10))}
-                      onBlur={() => handleCategorySubmit(category.name)}
-                      className="form-input w-16"
-                    />
-                    <span className="text-body">/{category.maxScore}</span>
-                  </div>
-                  <div className="h-2 flex-1 mx-4 rounded-full bg-gray-200 overflow-hidden">
-                    <div
-                      className="h-full bg-primary rounded-full"
-                      style={{
-                        width: `${((scores[category.name] || 0) / category.maxScore) * 100}%`,
-                      }}
-                    />
+                <div>
+                  <label className="label">Score</label>
+                  <input
+                    type="range"
+                    min="0"
+                    max={category.maxScore}
+                    value={scores[category.name] || 0}
+                    onChange={(e) => handleScoreChange(category.name, parseInt(e.target.value))}
+                    className="w-full"
+                  />
+                  <div className="text-sm text-gray-500 mt-1">
+                    {scores[category.name] || 0}/{category.maxScore}
                   </div>
                 </div>
-                <div className="form-group">
-                  <label
-                    htmlFor={`${category.name}-highlights`}
-                    className="form-label"
-                  >
-                    Highlights
-                  </label>
+                <div>
+                  <label className="label">Highlights</label>
                   <textarea
-                    id={`${category.name}-highlights`}
-                    name={`${category.name}-highlights`}
-                    rows={4}
                     value={highlights[category.name] || ''}
                     onChange={(e) => handleHighlightChange(category.name, e.target.value)}
-                    onBlur={() => handleCategorySubmit(category.name)}
-                    className="form-input"
+                    className="input"
+                    rows={3}
                     placeholder="Add highlights..."
                   />
                 </div>
+                <button
+                  onClick={() => handleCategorySubmit(category.name)}
+                  className="button button-primary w-full"
+                >
+                  {saveStatus[category.name] || 'Save'}
+                </button>
               </div>
             </div>
           </div>

@@ -1,19 +1,30 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { PlusCircle, BarChart2, AlertCircle, Zap, ChevronUp, ChevronDown, X } from 'lucide-react';
 import Button from '../packages/ui/src/components/Button';
+import Toggle from './shared/Toggle';
+import { publishScorecard, unpublishScorecard, getScorecardPublishStatus } from '@/app/actions/scorecard';
+import { useSearchParams } from 'next/navigation';
 
 interface Highlight {
   id: string;
   text: string;
   serviceArea: string;
+  relatedMetricId?: string; // Optional reference to a metric signal
+}
+
+interface MetricSignal {
+  id: string;
+  name: string;
+  value: string;
 }
 
 interface ScoreData {
   score: number;
   maxScore: number;
   highlights: Highlight[];
+  metricSignals: MetricSignal[];
 }
 
 interface BucketData {
@@ -29,8 +40,15 @@ interface BucketData {
 
 export default function Scorecard() {
   const [isAddingHighlight, setIsAddingHighlight] = useState<string | null>(null);
-  const [newHighlight, setNewHighlight] = useState({ text: '', serviceArea: 'Other' });
+  const [newHighlight, setNewHighlight] = useState({ 
+    text: '', 
+    serviceArea: 'Other',
+    relatedMetricId: '' 
+  });
   const [isPublished, setIsPublished] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
+  const searchParams = useSearchParams();
+  const businessId = searchParams.get('businessId');
   const [buckets, setBuckets] = useState<BucketData[]>([
     {
       name: 'Foundation',
@@ -47,6 +65,11 @@ export default function Scorecard() {
           { id: '1', text: 'Brand messaging inconsistent across digital touchpoints', serviceArea: 'Brand/GTM Strategy' },
           { id: '2', text: 'Marketing automation tools severely underutilized', serviceArea: 'Martech' },
           { id: '9', text: 'Analytics implementation lacks cross-channel customer journey tracking', serviceArea: 'Data & Analytics' }
+        ],
+        metricSignals: [
+          { id: 'm1', name: 'Brand Consistency', value: '65%' },
+          { id: 'm2', name: 'Automation Utilization', value: '32%' },
+          { id: 'm3', name: 'Analytics Coverage', value: '48%' }
         ]
       }
     },
@@ -65,6 +88,11 @@ export default function Scorecard() {
           { id: '3', text: 'Google Ads quality scores below industry average', serviceArea: 'Performance Media' },
           { id: '4', text: 'Campaign attribution lacking for multi-touch journeys', serviceArea: 'Campaigns' },
           { id: '10', text: 'PR and earned media strategy not aligned with overall marketing goals', serviceArea: 'Earned Media' }
+        ],
+        metricSignals: [
+          { id: 'm4', name: 'Ad Quality Score', value: '5.2/10' },
+          { id: 'm5', name: 'Attribution Accuracy', value: '61%' },
+          { id: 'm6', name: 'Media Alignment', value: '43%' }
         ]
       }
     },
@@ -83,6 +111,11 @@ export default function Scorecard() {
           { id: '5', text: 'Mobile page load speed exceeding 4 seconds on product pages', serviceArea: 'Website' },
           { id: '6', text: 'Cart abandonment rate 15% above industry average', serviceArea: 'Ecommerce Platforms' },
           { id: '11', text: 'Product recommendation algorithm performing below benchmark standards', serviceArea: 'Digital Product' }
+        ],
+        metricSignals: [
+          { id: 'm7', name: 'Page Load Speed', value: '4.3s' },
+          { id: 'm8', name: 'Cart Abandonment', value: '72%' },
+          { id: 'm9', name: 'Recommendation CTR', value: '2.1%' }
         ]
       }
     },
@@ -101,10 +134,36 @@ export default function Scorecard() {
           { id: '7', text: 'Email list declining 5% month-over-month due to unsubscribes', serviceArea: 'CRM' },
           { id: '8', text: 'Social content calendar inconsistently maintained', serviceArea: 'Organic Social' },
           { id: '12', text: 'Mobile app retention rate drops 40% after first week of installation', serviceArea: 'App' }
+        ],
+        metricSignals: [
+          { id: 'm10', name: 'Email List Growth', value: '-5%' },
+          { id: 'm11', name: 'Content Consistency', value: '37%' },
+          { id: 'm12', name: 'App Retention', value: '60%' }
         ]
       }
     }
   ]);
+
+  // Load initial publish status
+  useEffect(() => {
+    const loadPublishStatus = async () => {
+      if (!businessId) return;
+      
+      try {
+        console.log('[DEBUG] Loading initial scorecard publish status');
+        const result = await getScorecardPublishStatus(businessId);
+        console.log('[DEBUG] Initial scorecard status result:', result);
+        
+        if (result.success) {
+          setIsPublished(result.isPublished);
+        }
+      } catch (error) {
+        console.error('[DEBUG] Failed to load scorecard publish status:', error);
+      }
+    };
+
+    loadPublishStatus();
+  }, [businessId]);
 
   const handleAddHighlight = (bucketName: string) => {
     if (!newHighlight.text || !newHighlight.serviceArea) return;
@@ -121,7 +180,8 @@ export default function Scorecard() {
                 { 
                   id: Date.now().toString(), 
                   text: newHighlight.text, 
-                  serviceArea: newHighlight.serviceArea 
+                  serviceArea: newHighlight.serviceArea,
+                  relatedMetricId: newHighlight.relatedMetricId || undefined
                 }
               ]
             }
@@ -131,7 +191,7 @@ export default function Scorecard() {
       })
     );
     
-    setNewHighlight({ text: '', serviceArea: 'Other' });
+    setNewHighlight({ text: '', serviceArea: 'Other', relatedMetricId: '' });
     setIsAddingHighlight(null);
   };
 
@@ -174,8 +234,57 @@ export default function Scorecard() {
 
   const runAudit = (bucketName: string) => {
     console.log(`Running AI audit for ${bucketName}`);
-    // This would be where we call the AI service to generate highlights
-    alert(`AI audit for ${bucketName} would run here`);
+    
+    // This would be where we call the AI service to generate highlights and metrics
+    // For now, we'll simulate by adding some random metrics
+    const bucket = buckets.find(b => b.name === bucketName);
+    if (!bucket) return;
+    
+    // Sample metric signals based on bucket name
+    const newMetricSignals: MetricSignal[] = [];
+    
+    if (bucketName === 'Foundation') {
+      newMetricSignals.push(
+        { id: `m${Date.now()}-1`, name: 'Brand Consistency', value: `${Math.floor(Math.random() * 40 + 30)}%` },
+        { id: `m${Date.now()}-2`, name: 'Tech Stack Coverage', value: `${Math.floor(Math.random() * 50 + 40)}%` }
+      );
+    } else if (bucketName === 'Acquisition') {
+      newMetricSignals.push(
+        { id: `m${Date.now()}-1`, name: 'CPC', value: `$${(Math.random() * 5 + 1).toFixed(2)}` },
+        { id: `m${Date.now()}-2`, name: 'CAC', value: `$${Math.floor(Math.random() * 100 + 50)}` }
+      );
+    } else if (bucketName === 'Conversion') {
+      newMetricSignals.push(
+        { id: `m${Date.now()}-1`, name: 'Conversion Rate', value: `${(Math.random() * 5 + 1).toFixed(1)}%` },
+        { id: `m${Date.now()}-2`, name: 'Bounce Rate', value: `${Math.floor(Math.random() * 30 + 40)}%` }
+      );
+    } else if (bucketName === 'Retention') {
+      newMetricSignals.push(
+        { id: `m${Date.now()}-1`, name: 'Churn Rate', value: `${(Math.random() * 5 + 1).toFixed(1)}%` },
+        { id: `m${Date.now()}-2`, name: 'LTV', value: `$${Math.floor(Math.random() * 500 + 200)}` }
+      );
+    }
+    
+    // Update the bucket with new metrics
+    setBuckets(prevBuckets => 
+      prevBuckets.map(bucket => {
+        if (bucket.name === bucketName) {
+          return {
+            ...bucket,
+            data: {
+              ...bucket.data,
+              metricSignals: [
+                ...bucket.data.metricSignals,
+                ...newMetricSignals
+              ]
+            }
+          };
+        }
+        return bucket;
+      })
+    );
+    
+    alert(`AI audit for ${bucketName} completed. Added ${newMetricSignals.length} new metrics.`);
   };
 
   const handleDeleteHighlight = (bucketName: string, highlightId: string) => {
@@ -195,22 +304,45 @@ export default function Scorecard() {
     );
   };
 
+  const handlePublishToggle = async () => {
+    if (!businessId) {
+      console.error('[DEBUG] No business ID available for publish toggle');
+      return;
+    }
+
+    console.log('[DEBUG] Scorecard publish toggle clicked:', { isPublished, businessId });
+    setIsPublishing(true);
+    
+    try {
+      const result = isPublished 
+        ? await unpublishScorecard(businessId)
+        : await publishScorecard(businessId);
+      
+      console.log('[DEBUG] Scorecard publish toggle result:', result);
+      
+      if (result.success) {
+        setIsPublished(!isPublished);
+        console.log('[DEBUG] Scorecard publish state updated:', { newState: !isPublished });
+      } else {
+        console.error('[DEBUG] Failed to toggle scorecard publish state:', result.error);
+      }
+    } catch (error) {
+      console.error('[DEBUG] Error toggling scorecard publish state:', error);
+    } finally {
+      setIsPublishing(false);
+    }
+  };
+
   return (
     <div className="space-y-8">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-semibold">Digital Performance Scorecard</h1>
         <div className="flex items-center gap-3">
-          <div className="flex items-center bg-white border border-gray-200 rounded-md px-3 py-1.5 text-sm">
-            <span className="mr-2 font-medium">Publish</span>
-            <button 
-              className={`relative inline-flex h-5 w-10 items-center rounded-full transition-colors ${isPublished ? 'bg-blue-600' : 'bg-gray-200'}`}
-              onClick={() => setIsPublished(!isPublished)}
-            >
-              <span 
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${isPublished ? 'translate-x-5' : 'translate-x-1'}`}
-              />
-            </button>
-          </div>
+          <Toggle
+            isEnabled={isPublished}
+            onToggle={handlePublishToggle}
+            isLoading={isPublishing}
+          />
           <Button variant="outline" size="sm">
             <Zap className="h-4 w-4 mr-1" />
             Run Full Audit
@@ -301,38 +433,56 @@ export default function Scorecard() {
                       className="w-full p-2 mb-2 bg-white border border-gray-200 rounded"
                       rows={2}
                     />
-                    <div className="flex items-center justify-between">
-                      <select 
-                        value={newHighlight.serviceArea}
-                        onChange={(e) => setNewHighlight({...newHighlight, serviceArea: e.target.value})}
-                        className="p-2 pr-8 bg-white border border-gray-200 rounded appearance-none"
-                        style={{ backgroundImage: "url(\"data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e\")", backgroundPosition: "right 0.5rem center", backgroundRepeat: "no-repeat", backgroundSize: "1.5em 1.5em" }}
-                      >
-                        {bucket.serviceAreas.map(area => (
-                          <option key={area} value={area}>{area}</option>
-                        ))}
-                        <option value="Other">Other</option>
-                      </select>
-                      <div className="space-x-2">
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => {
-                            setNewHighlight({ text: '', serviceArea: 'Other' });
-                            setIsAddingHighlight(null);
-                          }}
+                    <div className="flex flex-col space-y-2">
+                      <div className="flex items-center space-x-2">
+                        <label className="text-sm font-medium">Service Area:</label>
+                        <select 
+                          value={newHighlight.serviceArea}
+                          onChange={(e) => setNewHighlight({...newHighlight, serviceArea: e.target.value})}
+                          className="p-2 pr-8 bg-white border border-gray-200 rounded appearance-none flex-grow"
+                          style={{ backgroundImage: "url(\"data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e\")", backgroundPosition: "right 0.5rem center", backgroundRepeat: "no-repeat", backgroundSize: "1.5em 1.5em" }}
                         >
-                          Cancel
-                        </Button>
-                        <Button 
-                          variant="primary" 
-                          size="sm"
-                          onClick={() => handleAddHighlight(bucket.name)}
-                          disabled={!newHighlight.text || !newHighlight.serviceArea}
-                        >
-                          Save
-                        </Button>
+                          {bucket.serviceAreas.map(area => (
+                            <option key={area} value={area}>{area}</option>
+                          ))}
+                          <option value="Other">Other</option>
+                        </select>
                       </div>
+                      
+                      <div className="flex items-center space-x-2">
+                        <label className="text-sm font-medium">Related Metric:</label>
+                        <select 
+                          value={newHighlight.relatedMetricId}
+                          onChange={(e) => setNewHighlight({...newHighlight, relatedMetricId: e.target.value})}
+                          className="p-2 pr-8 bg-white border border-gray-200 rounded appearance-none flex-grow"
+                          style={{ backgroundImage: "url(\"data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e\")", backgroundPosition: "right 0.5rem center", backgroundRepeat: "no-repeat", backgroundSize: "1.5em 1.5em" }}
+                        >
+                          <option value="">None</option>
+                          {bucket.data.metricSignals.map(signal => (
+                            <option key={signal.id} value={signal.id}>{signal.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                    <div className="flex justify-end space-x-2 mt-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => {
+                          setNewHighlight({ text: '', serviceArea: 'Other', relatedMetricId: '' });
+                          setIsAddingHighlight(null);
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                      <Button 
+                        variant="primary" 
+                        size="sm"
+                        onClick={() => handleAddHighlight(bucket.name)}
+                        disabled={!newHighlight.text || !newHighlight.serviceArea}
+                      >
+                        Save
+                      </Button>
                     </div>
                   </div>
                 )}
@@ -354,9 +504,16 @@ export default function Scorecard() {
                           <AlertCircle className={`flex-shrink-0 h-5 w-5 mr-2 mt-0.5 ${bucket.textColor}`} />
                           <div>
                             <p className="text-sm">{highlight.text}</p>
-                            <span className={`text-xs font-medium ${bucket.textColor} mt-1 inline-block`}>
-                              {highlight.serviceArea}
-                            </span>
+                            <div className="flex flex-wrap items-center gap-2 mt-1">
+                              <span className={`text-xs font-medium ${bucket.textColor} inline-block`}>
+                                {highlight.serviceArea}
+                              </span>
+                              {highlight.relatedMetricId && (
+                                <span className="bg-[#f9f9f9] border border-[#e9e9e9] text-[#555555] px-2 py-0.5 rounded-full inline-flex items-center font-mono text-xs">
+                                  {bucket.data.metricSignals.find(m => m.id === highlight.relatedMetricId)?.name}
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -366,6 +523,24 @@ export default function Scorecard() {
                   <div className="text-center py-6 text-gray-500">
                     <BarChart2 className="h-8 w-8 mx-auto mb-2 text-gray-400" />
                     <p>No issues identified yet. Add one or run an audit to assess performance.</p>
+                  </div>
+                )}
+                
+                {/* Metric Signals Section */}
+                {bucket.data.metricSignals.length > 0 && (
+                  <div className="mt-6">
+                    <h3 className="font-medium mb-2">Metric Signals</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {bucket.data.metricSignals.map((signal) => (
+                        <div
+                          key={signal.id}
+                          className="px-3 py-1 rounded-full bg-[#f9f9f9] border border-[#e9e9e9] text-[#555555] flex items-center font-mono"
+                        >
+                          <span className="font-medium text-xs">{signal.name}:</span>
+                          <span className="ml-1 text-xs text-black font-bold">{signal.value}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>

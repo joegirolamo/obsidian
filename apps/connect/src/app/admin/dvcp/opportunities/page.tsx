@@ -1,8 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { PlusCircle, Lightbulb, Sparkles, X } from 'lucide-react';
 import Button from '../../../../packages/ui/src/components/Button';
+import Toggle from '../../../../components/shared/Toggle';
+import { useSearchParams } from 'next/navigation';
+import { publishOpportunities, unpublishOpportunities, getOpportunitiesPublishStatus } from '@/app/actions/opportunities';
 
 // Define the sparkle gradient icon as a custom component
 const SparkleGradientIcon = ({className}: {className?: string}) => (
@@ -46,6 +49,9 @@ export default function OpportunitiesPage() {
   const [isAddingOpportunity, setIsAddingOpportunity] = useState<string | null>(null);
   const [newOpportunity, setNewOpportunity] = useState({ text: '', serviceArea: 'Other', goalTag: '' });
   const [isPublished, setIsPublished] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
+  const searchParams = useSearchParams();
+  const businessId = searchParams.get('businessId');
   const [goals, setGoals] = useState([
     'Increase Revenue by 20%',
     'Reduce Customer Acquisition Cost',
@@ -108,6 +114,27 @@ export default function OpportunitiesPage() {
     }
   ]);
 
+  // Load initial publish status
+  useEffect(() => {
+    const loadPublishStatus = async () => {
+      if (!businessId) return;
+      
+      try {
+        console.log('[DEBUG] Loading initial opportunities publish status');
+        const result = await getOpportunitiesPublishStatus(businessId);
+        console.log('[DEBUG] Initial opportunities status result:', result);
+        
+        if (result.success) {
+          setIsPublished(result.isPublished ?? false);
+        }
+      } catch (error) {
+        console.error('[DEBUG] Failed to load opportunities publish status:', error);
+      }
+    };
+
+    loadPublishStatus();
+  }, [businessId]);
+
   const handleAddOpportunity = (bucketName: string) => {
     if (!newOpportunity.text || !newOpportunity.serviceArea) return;
     
@@ -155,22 +182,45 @@ export default function OpportunitiesPage() {
     );
   };
 
+  const handlePublishToggle = async () => {
+    if (!businessId) {
+      console.error('[DEBUG] No business ID available for publish toggle');
+      return;
+    }
+
+    console.log('[DEBUG] Opportunities publish toggle clicked:', { isPublished, businessId });
+    setIsPublishing(true);
+    
+    try {
+      const result = isPublished 
+        ? await unpublishOpportunities(businessId)
+        : await publishOpportunities(businessId);
+      
+      console.log('[DEBUG] Opportunities publish toggle result:', result);
+      
+      if (result.success) {
+        setIsPublished(!isPublished);
+        console.log('[DEBUG] Opportunities publish state updated:', { newState: !isPublished });
+      } else {
+        console.error('[DEBUG] Failed to toggle opportunities publish state:', result.error);
+      }
+    } catch (error) {
+      console.error('[DEBUG] Error toggling opportunities publish state:', error);
+    } finally {
+      setIsPublishing(false);
+    }
+  };
+
   return (
     <div className="space-y-8">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-semibold">Opportunities</h1>
         <div className="flex items-center gap-3">
-          <div className="flex items-center bg-white border border-gray-200 rounded-md px-3 py-1.5 text-sm">
-            <span className="mr-2 font-medium">Publish</span>
-            <button 
-              className={`relative inline-flex h-5 w-10 items-center rounded-full transition-colors ${isPublished ? 'bg-blue-600' : 'bg-gray-200'}`}
-              onClick={() => setIsPublished(!isPublished)}
-            >
-              <span 
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${isPublished ? 'translate-x-5' : 'translate-x-1'}`}
-              />
-            </button>
-          </div>
+          <Toggle
+            isEnabled={isPublished}
+            onToggle={handlePublishToggle}
+            isLoading={isPublishing}
+          />
           <Button variant="outline" size="sm">
             <SparkleGradientIcon className="h-4 w-4 mr-1" />
             Generate All

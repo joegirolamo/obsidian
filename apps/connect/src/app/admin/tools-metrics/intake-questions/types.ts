@@ -1,0 +1,1 @@
+export type QuestionType = 'TEXT' | 'NUMBER' | 'BOOLEAN' | 'SELECT'; 

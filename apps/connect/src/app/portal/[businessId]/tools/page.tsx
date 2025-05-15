@@ -1,10 +1,9 @@
 'use client';
 
-import { useParams } from 'next/navigation';
-import { redirect } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import ToolAccess from "@/app/portal/[businessId]/ToolAccess";
 import { NavigationButtons } from "@/app/portal/[businessId]/NavigationButtons";
-import { getBusinessToolsAction, createToolAccessAction } from '@/app/actions/serverActions';
+import { getBusinessToolsAction } from '@/app/actions/serverActions';
 import { useEffect, useState } from 'react';
 
 type ToolStatus = "GRANTED" | "REQUESTED" | "DENIED" | null;
@@ -14,10 +13,12 @@ interface Tool {
   name: string;
   description: string | null;
   status: ToolStatus;
+  isRequested: boolean;
 }
 
 export default function ToolsPage() {
   const { businessId } = useParams() as { businessId: string };
+  const router = useRouter();
   const [tools, setTools] = useState<Tool[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -42,16 +43,10 @@ export default function ToolsPage() {
 
   const handleSubmit = async (formData: FormData) => {
     try {
-      const toolIds = Array.from(formData.keys());
-      const updates = toolIds.map(async (toolId) => {
-        return await createToolAccessAction(businessId, toolId);
-      });
-
-      await Promise.all(updates);
-      redirect(`/portal/${businessId}/thank-you`);
+      router.push(`/portal/${businessId}/questions`);
     } catch (err) {
-      setError('Failed to request tool access');
-      console.error('Error requesting tool access:', err);
+      setError('Failed to proceed to next step');
+      console.error('Error proceeding to next step:', err);
     }
   };
 
