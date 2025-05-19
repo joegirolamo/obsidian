@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { updateScorecardCategory, publishScorecard, unpublishScorecard, getScorecardPublishStatus } from '@/app/actions/scorecard';
+import { updateScorecardCategory, publishScorecard, unpublishScorecard, getScorecardPublishStatus } from '@/app/actions/scorecard-new';
 import PublishToggle from '@/components/shared/PublishToggle';
 
 export default function ScorecardPage() {

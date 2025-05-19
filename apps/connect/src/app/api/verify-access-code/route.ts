@@ -30,10 +30,6 @@ export async function POST(request: Request) {
         id: true,
         isScorecardPublished: true,
         isOpportunitiesPublished: true,
-        clientPortals: {
-          where: { clientId: session.user.id },
-          select: { id: true },
-        },
         tools: {
           select: { id: true }
         }
@@ -47,8 +43,16 @@ export async function POST(request: Request) {
       );
     }
 
+    // Check if client portal already exists
+    const existingClientPortal = await prisma.clientPortal.findFirst({
+      where: {
+        businessId: business.id,
+        clientId: session.user.id
+      }
+    });
+
     // Create client portal if it doesn't exist
-    if (!business.clientPortals.length) {
+    if (!existingClientPortal) {
       await prisma.clientPortal.create({
         data: {
           businessId: business.id,

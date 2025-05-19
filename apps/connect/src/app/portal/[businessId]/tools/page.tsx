@@ -51,7 +51,13 @@ export default function ToolsPage() {
   };
 
   if (isLoading) {
-    return <div className="flex justify-center items-center min-h-screen">Loading...</div>;
+    return (
+      <div className="max-w-2xl mx-auto">
+        <div className="flex justify-center items-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      </div>
+    );
   }
 
   if (error) {

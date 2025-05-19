@@ -1,10 +1,23 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { PlusCircle, BarChart2, AlertCircle, Zap, ChevronUp, ChevronDown, X } from 'lucide-react';
+import { PlusCircle, BarChart2, AlertCircle, Zap, ChevronUp, ChevronDown, X, Loader2, Pencil } from 'lucide-react';
 import Button from '../packages/ui/src/components/Button';
 import Toggle from './shared/Toggle';
-import { publishScorecard, unpublishScorecard, getScorecardPublishStatus } from '@/app/actions/scorecard';
+import { 
+  publishScorecard, 
+  unpublishScorecard, 
+  getScorecardPublishStatus,
+  updateScorecardCategory,
+  getScorecardData,
+  initializeScorecards,
+  updateScorecardScore
+} from '@/app/actions/scorecard';
+import { 
+  addScorecardHighlight,
+  deleteScorecardHighlight,
+  updateScorecardHighlight 
+} from '@/app/actions/scorecard-update';
 import { useSearchParams } from 'next/navigation';
 
 interface Highlight {
@@ -40,133 +53,191 @@ interface BucketData {
 
 export default function Scorecard() {
   const [isAddingHighlight, setIsAddingHighlight] = useState<string | null>(null);
+  const [isEditingHighlight, setIsEditingHighlight] = useState<string | null>(null);
   const [newHighlight, setNewHighlight] = useState({ 
     text: '', 
     serviceArea: 'Other',
     relatedMetricId: '' 
   });
+  const [editingHighlight, setEditingHighlight] = useState<Highlight | null>(null);
   const [isPublished, setIsPublished] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  // Separate loading states for different actions
+  const [isSavingHighlight, setIsSavingHighlight] = useState(false);
+  const [isSavingScore, setIsSavingScore] = useState<string | null>(null); // Store bucket name being saved
+  const [isRunningAudit, setIsRunningAudit] = useState<string | null>(null); // Store bucket name being audited
+  const [isRunningFullAudit, setIsRunningFullAudit] = useState(false);
+  
   const searchParams = useSearchParams();
   const businessId = searchParams.get('businessId');
+  
+  // Define static buckets with their default values
   const [buckets, setBuckets] = useState<BucketData[]>([
     {
       name: 'Foundation',
-      color: '#FFDC00', // Refined yellow
+      color: '#FFDC00',
       bgColor: 'bg-yellow-50',
       borderColor: 'border-yellow-200',
       hoverColor: 'hover:bg-yellow-100',
       textColor: 'text-yellow-800',
       serviceAreas: ['Brand/GTM Strategy', 'Martech', 'Data & Analytics'],
-      data: {
-        score: 75,
-        maxScore: 100,
-        highlights: [
-          { id: '1', text: 'Brand messaging inconsistent across digital touchpoints', serviceArea: 'Brand/GTM Strategy' },
-          { id: '2', text: 'Marketing automation tools severely underutilized', serviceArea: 'Martech' },
-          { id: '9', text: 'Analytics implementation lacks cross-channel customer journey tracking', serviceArea: 'Data & Analytics' }
-        ],
-        metricSignals: [
-          { id: 'm1', name: 'Brand Consistency', value: '65%' },
-          { id: 'm2', name: 'Automation Utilization', value: '32%' },
-          { id: 'm3', name: 'Analytics Coverage', value: '48%' }
-        ]
-      }
+      data: { score: 0, maxScore: 100, highlights: [], metricSignals: [] }
     },
     {
       name: 'Acquisition',
-      color: '#2ECC40', // Refined green
+      color: '#2ECC40',
       bgColor: 'bg-green-50',
       borderColor: 'border-green-200',
       hoverColor: 'hover:bg-green-100',
       textColor: 'text-green-800',
       serviceAreas: ['Performance Media', 'Campaigns', 'Earned Media'],
-      data: {
-        score: 82,
-        maxScore: 100,
-        highlights: [
-          { id: '3', text: 'Google Ads quality scores below industry average', serviceArea: 'Performance Media' },
-          { id: '4', text: 'Campaign attribution lacking for multi-touch journeys', serviceArea: 'Campaigns' },
-          { id: '10', text: 'PR and earned media strategy not aligned with overall marketing goals', serviceArea: 'Earned Media' }
-        ],
-        metricSignals: [
-          { id: 'm4', name: 'Ad Quality Score', value: '5.2/10' },
-          { id: 'm5', name: 'Attribution Accuracy', value: '61%' },
-          { id: 'm6', name: 'Media Alignment', value: '43%' }
-        ]
-      }
+      data: { score: 0, maxScore: 100, highlights: [], metricSignals: [] }
     },
     {
       name: 'Conversion',
-      color: '#0074D9', // Refined blue
+      color: '#0074D9',
       bgColor: 'bg-blue-50',
       borderColor: 'border-blue-200',
       hoverColor: 'hover:bg-blue-100',
       textColor: 'text-blue-800',
       serviceAreas: ['Website', 'Ecommerce Platforms', 'Digital Product'],
-      data: {
-        score: 65,
-        maxScore: 100,
-        highlights: [
-          { id: '5', text: 'Mobile page load speed exceeding 4 seconds on product pages', serviceArea: 'Website' },
-          { id: '6', text: 'Cart abandonment rate 15% above industry average', serviceArea: 'Ecommerce Platforms' },
-          { id: '11', text: 'Product recommendation algorithm performing below benchmark standards', serviceArea: 'Digital Product' }
-        ],
-        metricSignals: [
-          { id: 'm7', name: 'Page Load Speed', value: '4.3s' },
-          { id: 'm8', name: 'Cart Abandonment', value: '72%' },
-          { id: 'm9', name: 'Recommendation CTR', value: '2.1%' }
-        ]
-      }
+      data: { score: 0, maxScore: 100, highlights: [], metricSignals: [] }
     },
     {
       name: 'Retention',
-      color: '#FF851B', // Refined orange
+      color: '#FF851B',
       bgColor: 'bg-orange-50',
       borderColor: 'border-orange-200',
       hoverColor: 'hover:bg-orange-100',
       textColor: 'text-orange-800',
       serviceAreas: ['CRM', 'App', 'Organic Social'],
-      data: {
-        score: 70,
-        maxScore: 100,
-        highlights: [
-          { id: '7', text: 'Email list declining 5% month-over-month due to unsubscribes', serviceArea: 'CRM' },
-          { id: '8', text: 'Social content calendar inconsistently maintained', serviceArea: 'Organic Social' },
-          { id: '12', text: 'Mobile app retention rate drops 40% after first week of installation', serviceArea: 'App' }
-        ],
-        metricSignals: [
-          { id: 'm10', name: 'Email List Growth', value: '-5%' },
-          { id: 'm11', name: 'Content Consistency', value: '37%' },
-          { id: 'm12', name: 'App Retention', value: '60%' }
-        ]
-      }
+      data: { score: 0, maxScore: 100, highlights: [], metricSignals: [] }
     }
   ]);
 
-  // Load initial publish status
+  // Load data from the database when the component mounts
   useEffect(() => {
-    const loadPublishStatus = async () => {
+    async function loadData() {
       if (!businessId) return;
       
+      setIsLoading(true);
+      
       try {
-        console.log('[DEBUG] Loading initial scorecard publish status');
-        const result = await getScorecardPublishStatus(businessId);
-        console.log('[DEBUG] Initial scorecard status result:', result);
+        // Check publish status
+        const publishStatus = await getScorecardPublishStatus(businessId);
+        if (publishStatus.success) {
+          setIsPublished(publishStatus.isPublished || false);
+        }
         
-        if (result.success) {
-          setIsPublished(result.isPublished);
+        // Get scorecard data using the server action
+        const result = await getScorecardData(businessId);
+        console.log('[DEBUG] Loaded scorecard data from server:', result);
+        
+        // If no scorecards exist, initialize them
+        if (result.success && (!result.scorecards || result.scorecards.length === 0)) {
+          console.log('[DEBUG] No scorecards found, initializing...');
+          
+          // Initialize empty scorecards
+          const initResult = await initializeScorecards(businessId);
+          console.log('[DEBUG] Initialization result:', initResult);
+          
+          if (initResult.success) {
+            // Re-fetch the data after initialization
+            const newResult = await getScorecardData(businessId);
+            console.log('[DEBUG] Reloaded scorecard data after initialization:', newResult);
+            
+            if (newResult.success && newResult.scorecards) {
+              updateBucketsFromScorecardsData(newResult.scorecards);
+            }
+          }
+        } else if (result.success && result.scorecards) {
+          // Update buckets with existing scorecard data
+          updateBucketsFromScorecardsData(result.scorecards);
         }
       } catch (error) {
-        console.error('[DEBUG] Failed to load scorecard publish status:', error);
+        console.error('Error loading scorecard data:', error);
+      } finally {
+        setIsLoading(false);
       }
-    };
-
-    loadPublishStatus();
+    }
+    
+    loadData();
   }, [businessId]);
+  
+  // Helper function to update buckets from scorecards data
+  const updateBucketsFromScorecardsData = (scorecardsData: any[]) => {
+    setBuckets(prevBuckets => {
+      return prevBuckets.map(bucket => {
+        // Find matching scorecard for this bucket
+        const scorecard = scorecardsData.find((s: any) => s.category === bucket.name);
+        
+        if (!scorecard) return bucket;
+        
+        console.log('[DEBUG] Found data for bucket:', bucket.name, 'Score:', scorecard.score);
+        
+        // Update the bucket with scorecard data
+        return {
+          ...bucket,
+          data: {
+            score: scorecard.score,
+            maxScore: scorecard.maxScore,
+            highlights: scorecard.highlights || [],
+            metricSignals: scorecard.metricSignals || []
+          }
+        };
+      });
+    });
+  };
 
-  const handleAddHighlight = (bucketName: string) => {
-    if (!newHighlight.text || !newHighlight.serviceArea) return;
+  // Create a function to reload data that can be called after changes
+  const reloadData = async () => {
+    if (!businessId) return;
+    
+    try {
+      const result = await getScorecardData(businessId);
+      console.log('[DEBUG] Reloaded scorecard data from server:', result);
+      
+      if (result.success && result.scorecards) {
+        // Update the buckets with the latest data
+        setBuckets(prevBuckets => {
+          return prevBuckets.map(bucket => {
+            // Find matching scorecard for this bucket
+            const scorecard = result.scorecards.find((s: any) => s.category === bucket.name);
+            
+            if (!scorecard) return bucket;
+            
+            // Update the bucket with latest scorecard data
+            return {
+              ...bucket,
+              data: {
+                score: scorecard.score,
+                maxScore: scorecard.maxScore,
+                highlights: scorecard.highlights || [],
+                metricSignals: scorecard.metricSignals || []
+              }
+            };
+          });
+        });
+      }
+    } catch (error) {
+      console.error('Error reloading scorecard data:', error);
+    }
+  };
+
+  const handleAddHighlight = async (bucketName: string) => {
+    if (!businessId || !newHighlight.text || !newHighlight.serviceArea) return;
+    
+    setIsSavingHighlight(true);
+    
+    // First update the UI optimistically
+    const newHighlightObj = {
+      id: `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+      text: newHighlight.text,
+      serviceArea: newHighlight.serviceArea,
+      relatedMetricId: newHighlight.relatedMetricId || undefined
+    };
     
     setBuckets(prevBuckets => 
       prevBuckets.map(bucket => {
@@ -177,12 +248,7 @@ export default function Scorecard() {
               ...bucket.data,
               highlights: [
                 ...bucket.data.highlights,
-                { 
-                  id: Date.now().toString(), 
-                  text: newHighlight.text, 
-                  serviceArea: newHighlight.serviceArea,
-                  relatedMetricId: newHighlight.relatedMetricId || undefined
-                }
+                newHighlightObj
               ]
             }
           };
@@ -191,8 +257,55 @@ export default function Scorecard() {
       })
     );
     
-    setNewHighlight({ text: '', serviceArea: 'Other', relatedMetricId: '' });
-    setIsAddingHighlight(null);
+    try {
+      // Get the bucket to save
+      const bucket = buckets.find(b => b.name === bucketName);
+      if (!bucket) throw new Error('Bucket not found');
+      
+      // Format data for the server action
+      const highlights = bucket.data.highlights.map(h => 
+        `- ${h.text} (${h.serviceArea})`
+      ).join('\n');
+      
+      const serviceAreasText = bucket.serviceAreas.join(', ');
+      const description = `Service Areas: ${serviceAreasText}\n\nHighlights:\n${highlights}\n- ${newHighlight.text} (${newHighlight.serviceArea})`;
+      
+      // Include the new highlight in the JSON format if supported
+      const highlightsData = {
+        items: [
+          ...bucket.data.highlights,
+          newHighlightObj
+        ],
+        metricSignals: bucket.data.metricSignals,
+        score: bucket.data.score,
+        maxScore: bucket.data.maxScore,
+        serviceAreas: bucket.serviceAreas
+      };
+      
+      // Save to the database
+      await updateScorecardCategory(businessId, {
+        name: bucketName,
+        score: bucket.data.score,
+        highlights: description,
+        serviceAreas: bucket.serviceAreas,
+        highlightsData
+      });
+      
+      console.log('Successfully saved highlight');
+      
+      // After server response, reload data to ensure we're showing the latest
+      await reloadData();
+    } catch (error) {
+      console.error('Error saving highlight:', error);
+      
+      // Restore the previous state in case of error
+      // This implementation is simplified and just fetches the current state
+      window.location.reload();
+    } finally {
+      setNewHighlight({ text: '', serviceArea: 'Other', relatedMetricId: '' });
+      setIsAddingHighlight(null);
+      setIsSavingHighlight(false);
+    }
   };
 
   const handleScoreChange = (bucketName: string, newScore: number) => {
@@ -202,6 +315,7 @@ export default function Scorecard() {
     
     const clampedScore = Math.max(0, Math.min(bucket.data.maxScore, newScore));
     
+    // Update buckets state with the new score
     setBuckets(prevBuckets => 
       prevBuckets.map(bucket => {
         if (bucket.name === bucketName) {
@@ -218,54 +332,364 @@ export default function Scorecard() {
     );
   };
 
-  const increaseScore = (bucketName: string) => {
+  // When the input loses focus, save the changes
+  const handleScoreInputBlur = async (bucketName: string) => {
+    // Find the bucket to save
     const bucket = buckets.find(b => b.name === bucketName);
-    if (bucket && bucket.data.score < bucket.data.maxScore) {
-      handleScoreChange(bucketName, bucket.data.score + 1);
+    if (!bucket || !businessId || isSavingScore === bucketName) return;
+    
+    try {
+      // Set loading state
+      setIsSavingScore(bucketName);
+      
+      // Save the score
+      console.log('[DEBUG] Saving score change on blur:', bucket.data.score, 'for bucket:', bucketName);
+      
+      // Call the score update function directly
+      const result = await updateScorecardScore(businessId, bucketName, bucket.data.score);
+      
+      console.log('[DEBUG] Score update result on blur:', result);
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to save score');
+      }
+    } catch (error) {
+      console.error('Error saving score on blur:', error);
+      
+      // Reload data on error
+      await reloadData();
+    } finally {
+      setIsSavingScore(null);
     }
   };
 
-  const decreaseScore = (bucketName: string) => {
-    const bucket = buckets.find(b => b.name === bucketName);
-    if (bucket && bucket.data.score > 0) {
-      handleScoreChange(bucketName, bucket.data.score - 1);
+  const handleScoreChangeComplete = async (bucketName: string) => {
+    if (!businessId) return;
+    
+    setIsSavingScore(bucketName);
+    
+    try {
+      // Find the most current bucket state
+      const bucket = buckets.find(b => b.name === bucketName);
+      if (!bucket) throw new Error('Bucket not found');
+      
+      console.log('[DEBUG] Saving score:', bucket.data.score, 'for bucket:', bucketName);
+      
+      // Use the dedicated score update function for better performance
+      const result = await updateScorecardScore(businessId, bucketName, bucket.data.score);
+      
+      console.log('[DEBUG] Quick score update result:', result);
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to save score');
+      }
+      
+      // We don't need to reload all data since we're just updating the score
+      // This should make the UI more responsive
+    } catch (error) {
+      console.error('Error saving score:', error);
+      
+      // Only reload data on error to ensure UI is in sync with server
+      await reloadData();
+    } finally {
+      setIsSavingScore(null);
     }
   };
 
-  const runAudit = (bucketName: string) => {
+  const increaseScore = async (bucketName: string) => {
+    const bucket = buckets.find(b => b.name === bucketName);
+    if (bucket && bucket.data.score < bucket.data.maxScore && isSavingScore !== bucketName) {
+      // Calculate the new score
+      const newScore = bucket.data.score + 1;
+      
+      // First update the UI optimistically
+      handleScoreChange(bucketName, newScore);
+      
+      try {
+        // Save to server in background without visible loading state
+        console.log('[DEBUG] Increasing score to:', newScore, 'for bucket:', bucketName);
+        
+        // Call updateScorecardScore directly with the new value
+        const result = await updateScorecardScore(businessId as string, bucketName, newScore);
+        
+        if (!result.success) {
+          console.error('Error saving increased score:', result.error);
+          // Quietly reload data if there was an error
+          await reloadData();
+        }
+      } catch (error) {
+        console.error('Error increasing score:', error);
+        // Quietly reload data if there was an error
+        await reloadData();
+      }
+    }
+  };
+
+  const decreaseScore = async (bucketName: string) => {
+    const bucket = buckets.find(b => b.name === bucketName);
+    if (bucket && bucket.data.score > 0 && isSavingScore !== bucketName) {
+      // Calculate the new score
+      const newScore = bucket.data.score - 1;
+      
+      // First update the UI optimistically
+      handleScoreChange(bucketName, newScore);
+      
+      try {
+        // Save to server in background without visible loading state
+        console.log('[DEBUG] Decreasing score to:', newScore, 'for bucket:', bucketName);
+        
+        // Call updateScorecardScore directly with the new value
+        const result = await updateScorecardScore(businessId as string, bucketName, newScore);
+        
+        if (!result.success) {
+          console.error('Error saving decreased score:', result.error);
+          // Quietly reload data if there was an error
+          await reloadData();
+        }
+      } catch (error) {
+        console.error('Error decreasing score:', error);
+        // Quietly reload data if there was an error
+        await reloadData();
+      }
+    }
+  };
+
+  const handleDeleteHighlight = async (bucketName: string, highlightId: string) => {
+    if (!businessId) return;
+    
+    setIsSavingHighlight(true);
+    
+    // First update the UI optimistically
+    const updatedBuckets = [...buckets];
+    const bucketIndex = updatedBuckets.findIndex(b => b.name === bucketName);
+    
+    if (bucketIndex === -1) {
+      setIsSavingHighlight(false);
+      return;
+    }
+    
+    // Find the bucket and create a copy with the filtered highlights
+    const bucket = { ...updatedBuckets[bucketIndex] };
+    const updatedHighlights = bucket.data.highlights.filter(h => h.id !== highlightId);
+    
+    // Update the bucket with filtered highlights
+    bucket.data = {
+      ...bucket.data,
+      highlights: updatedHighlights
+    };
+    updatedBuckets[bucketIndex] = bucket;
+    
+    // Update state with the new buckets
+    setBuckets(updatedBuckets);
+    
+    try {
+      console.log('[DEBUG] Deleting highlight:', highlightId, 'from bucket:', bucketName);
+      
+      // Format the updated highlights into a description
+      const highlightsText = updatedHighlights.map(h => 
+        `- ${h.text} (${h.serviceArea})`
+      ).join('\n');
+      
+      const serviceAreasText = bucket.serviceAreas.join(', ');
+      const description = `Service Areas: ${serviceAreasText}\n\nHighlights:\n${highlightsText}`;
+      
+      // Create the highlight data structure
+      const highlightsData = {
+        items: updatedHighlights,
+        metricSignals: bucket.data.metricSignals,
+        score: bucket.data.score,
+        maxScore: bucket.data.maxScore,
+        serviceAreas: bucket.serviceAreas
+      };
+      
+      // Save to the database
+      const result = await updateScorecardCategory(businessId, {
+        name: bucketName,
+        score: bucket.data.score,
+        highlights: description,
+        serviceAreas: bucket.serviceAreas,
+        highlightsData
+      });
+      
+      console.log('[DEBUG] Delete highlight result:', result);
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to delete highlight');
+      }
+      
+      // After server response, reload data to ensure we're showing the latest
+      await reloadData();
+    } catch (error) {
+      console.error('Error deleting highlight:', error);
+      
+      // Reload data on error to ensure UI is in sync with server
+      await reloadData();
+    } finally {
+      setIsSavingHighlight(false);
+    }
+  };
+
+  const handleDeleteMetricSignal = async (bucketName: string, signalId: string) => {
+    if (!businessId) return;
+    
+    setIsSavingHighlight(true); // Reuse the same loading state
+    
+    // First update the UI optimistically
+    const updatedBuckets = [...buckets];
+    const bucketIndex = updatedBuckets.findIndex(b => b.name === bucketName);
+    
+    if (bucketIndex === -1) {
+      setIsSavingHighlight(false);
+      return;
+    }
+    
+    // Find the bucket and create a copy with the filtered metric signals
+    const bucket = { ...updatedBuckets[bucketIndex] };
+    const updatedMetricSignals = bucket.data.metricSignals.filter(s => s.id !== signalId);
+    
+    // Update the bucket with filtered metric signals
+    bucket.data = {
+      ...bucket.data,
+      metricSignals: updatedMetricSignals
+    };
+    updatedBuckets[bucketIndex] = bucket;
+    
+    // Update state with the new buckets
+    setBuckets(updatedBuckets);
+    
+    try {
+      console.log('[DEBUG] Deleting metric signal:', signalId, 'from bucket:', bucketName);
+      
+      // Format the highlights into a description (unchanged)
+      const highlightsText = bucket.data.highlights.map(h => 
+        `- ${h.text} (${h.serviceArea})`
+      ).join('\n');
+      
+      const serviceAreasText = bucket.serviceAreas.join(', ');
+      const description = `Service Areas: ${serviceAreasText}\n\nHighlights:\n${highlightsText}`;
+      
+      // Create the highlight data structure with updated metric signals
+      const highlightsData = {
+        items: bucket.data.highlights,
+        metricSignals: updatedMetricSignals,
+        score: bucket.data.score,
+        maxScore: bucket.data.maxScore,
+        serviceAreas: bucket.serviceAreas
+      };
+      
+      // Save to the database
+      const result = await updateScorecardCategory(businessId, {
+        name: bucketName,
+        score: bucket.data.score,
+        highlights: description,
+        serviceAreas: bucket.serviceAreas,
+        highlightsData
+      });
+      
+      console.log('[DEBUG] Delete metric signal result:', result);
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to delete metric signal');
+      }
+      
+      // After server response, reload data to ensure we're showing the latest
+      await reloadData();
+    } catch (error) {
+      console.error('Error deleting metric signal:', error);
+      
+      // Reload data on error to ensure UI is in sync with server
+      await reloadData();
+    } finally {
+      setIsSavingHighlight(false);
+    }
+  };
+
+  const runAudit = async (bucketName: string) => {
     console.log(`Running AI audit for ${bucketName}`);
     
     // This would be where we call the AI service to generate highlights and metrics
-    // For now, we'll simulate by adding some random metrics
+    // For now, we'll simulate by adding some random metrics and highlights
     const bucket = buckets.find(b => b.name === bucketName);
     if (!bucket) return;
     
+    setIsRunningAudit(bucketName);
+    
     // Sample metric signals based on bucket name
     const newMetricSignals: MetricSignal[] = [];
+    // Sample highlights based on bucket name
+    const newHighlights: Highlight[] = [];
     
     if (bucketName === 'Foundation') {
       newMetricSignals.push(
         { id: `m${Date.now()}-1`, name: 'Brand Consistency', value: `${Math.floor(Math.random() * 40 + 30)}%` },
         { id: `m${Date.now()}-2`, name: 'Tech Stack Coverage', value: `${Math.floor(Math.random() * 50 + 40)}%` }
       );
+      newHighlights.push(
+        { 
+          id: `h${Date.now()}-1`, 
+          text: 'Brand messaging is inconsistent across channels', 
+          serviceArea: 'Brand/GTM Strategy'
+        },
+        { 
+          id: `h${Date.now()}-2`, 
+          text: 'Analytics implementation is missing key conversion events', 
+          serviceArea: 'Data & Analytics'
+        }
+      );
     } else if (bucketName === 'Acquisition') {
       newMetricSignals.push(
         { id: `m${Date.now()}-1`, name: 'CPC', value: `$${(Math.random() * 5 + 1).toFixed(2)}` },
         { id: `m${Date.now()}-2`, name: 'CAC', value: `$${Math.floor(Math.random() * 100 + 50)}` }
+      );
+      newHighlights.push(
+        { 
+          id: `h${Date.now()}-1`, 
+          text: 'Paid search campaigns have low quality scores', 
+          serviceArea: 'Performance Media'
+        },
+        { 
+          id: `h${Date.now()}-2`, 
+          text: 'Social media campaigns lack cohesive messaging', 
+          serviceArea: 'Campaigns'
+        }
       );
     } else if (bucketName === 'Conversion') {
       newMetricSignals.push(
         { id: `m${Date.now()}-1`, name: 'Conversion Rate', value: `${(Math.random() * 5 + 1).toFixed(1)}%` },
         { id: `m${Date.now()}-2`, name: 'Bounce Rate', value: `${Math.floor(Math.random() * 30 + 40)}%` }
       );
+      newHighlights.push(
+        { 
+          id: `h${Date.now()}-1`, 
+          text: 'Checkout process has high abandonment rate', 
+          serviceArea: 'Ecommerce Platforms'
+        },
+        { 
+          id: `h${Date.now()}-2`, 
+          text: 'Mobile site has poor performance metrics', 
+          serviceArea: 'Website'
+        }
+      );
     } else if (bucketName === 'Retention') {
       newMetricSignals.push(
         { id: `m${Date.now()}-1`, name: 'Churn Rate', value: `${(Math.random() * 5 + 1).toFixed(1)}%` },
         { id: `m${Date.now()}-2`, name: 'LTV', value: `$${Math.floor(Math.random() * 500 + 200)}` }
       );
+      newHighlights.push(
+        { 
+          id: `h${Date.now()}-1`, 
+          text: 'Email campaigns have declining open rates', 
+          serviceArea: 'CRM'
+        },
+        { 
+          id: `h${Date.now()}-2`, 
+          text: 'App retention drops significantly after 30 days', 
+          serviceArea: 'App'
+        }
+      );
     }
     
-    // Update the bucket with new metrics
+    // Update the bucket with new metrics and highlights
     setBuckets(prevBuckets => 
       prevBuckets.map(bucket => {
         if (bucket.name === bucketName) {
@@ -276,6 +700,10 @@ export default function Scorecard() {
               metricSignals: [
                 ...bucket.data.metricSignals,
                 ...newMetricSignals
+              ],
+              highlights: [
+                ...bucket.data.highlights,
+                ...newHighlights
               ]
             }
           };
@@ -284,24 +712,196 @@ export default function Scorecard() {
       })
     );
     
-    alert(`AI audit for ${bucketName} completed. Added ${newMetricSignals.length} new metrics.`);
+    try {
+      // Save the updated data to the database
+      if (businessId) {
+        const bucket = buckets.find(b => b.name === bucketName);
+        if (!bucket) throw new Error('Bucket not found');
+        
+        // Format the updated highlights into a description
+        const updatedHighlights = [...bucket.data.highlights, ...newHighlights];
+        const highlightsText = updatedHighlights.map(h => 
+          `- ${h.text} (${h.serviceArea})`
+        ).join('\n');
+        
+        const serviceAreasText = bucket.serviceAreas.join(', ');
+        const description = `Service Areas: ${serviceAreasText}\n\nHighlights:\n${highlightsText}`;
+        
+        // Create the highlight data structure
+        const highlightsData = {
+          items: updatedHighlights,
+          metricSignals: [...bucket.data.metricSignals, ...newMetricSignals],
+          score: bucket.data.score,
+          maxScore: bucket.data.maxScore,
+          serviceAreas: bucket.serviceAreas
+        };
+        
+        // Save to the database
+        await updateScorecardCategory(businessId, {
+          name: bucketName,
+          score: bucket.data.score,
+          highlights: description,
+          serviceAreas: bucket.serviceAreas,
+          highlightsData
+        });
+      }
+      
+      // After successful save, reload data to ensure we're showing the latest
+      await reloadData();
+      alert(`AI audit for ${bucketName} completed. Added ${newMetricSignals.length} new metrics and ${newHighlights.length} new highlights.`);
+    } catch (error) {
+      console.error(`Error running audit for ${bucketName}:`, error);
+      alert(`Error running audit: ${error}`);
+    } finally {
+      setIsRunningAudit(null);
+    }
   };
 
-  const handleDeleteHighlight = (bucketName: string, highlightId: string) => {
-    setBuckets(prevBuckets => 
-      prevBuckets.map(bucket => {
-        if (bucket.name === bucketName) {
-          return {
-            ...bucket,
-            data: {
-              ...bucket.data,
-              highlights: bucket.data.highlights.filter(h => h.id !== highlightId)
+  const runFullAudit = async () => {
+    if (!businessId) return;
+    
+    setIsRunningFullAudit(true);
+    
+    try {
+      // Run audit for each bucket one by one - but don't use the normal runAudit function
+      // to avoid issues with loading state
+      for (const bucket of buckets) {
+        console.log(`Running full audit for ${bucket.name}`);
+        
+        // Generate metrics for this bucket (similar to runAudit but without setting loading state)
+        // Generate random metrics and highlights for this bucket
+        const newMetricSignals: MetricSignal[] = [];
+        const newHighlights: Highlight[] = [];
+        
+        if (bucket.name === 'Foundation') {
+          newMetricSignals.push(
+            { id: `m${Date.now()}-1`, name: 'Brand Consistency', value: `${Math.floor(Math.random() * 40 + 30)}%` },
+            { id: `m${Date.now()}-2`, name: 'Tech Stack Coverage', value: `${Math.floor(Math.random() * 50 + 40)}%` }
+          );
+          newHighlights.push(
+            { 
+              id: `h${Date.now()}-1`, 
+              text: 'Brand messaging is inconsistent across channels', 
+              serviceArea: 'Brand/GTM Strategy'
+            },
+            { 
+              id: `h${Date.now()}-2`, 
+              text: 'Analytics implementation is missing key conversion events', 
+              serviceArea: 'Data & Analytics'
             }
-          };
+          );
+        } else if (bucket.name === 'Acquisition') {
+          newMetricSignals.push(
+            { id: `m${Date.now()}-1`, name: 'CPC', value: `$${(Math.random() * 5 + 1).toFixed(2)}` },
+            { id: `m${Date.now()}-2`, name: 'CAC', value: `$${Math.floor(Math.random() * 100 + 50)}` }
+          );
+          newHighlights.push(
+            { 
+              id: `h${Date.now()}-1`, 
+              text: 'Paid search campaigns have low quality scores', 
+              serviceArea: 'Performance Media'
+            },
+            { 
+              id: `h${Date.now()}-2`, 
+              text: 'Social media campaigns lack cohesive messaging', 
+              serviceArea: 'Campaigns'
+            }
+          );
+        } else if (bucket.name === 'Conversion') {
+          newMetricSignals.push(
+            { id: `m${Date.now()}-1`, name: 'Conversion Rate', value: `${(Math.random() * 5 + 1).toFixed(1)}%` },
+            { id: `m${Date.now()}-2`, name: 'Bounce Rate', value: `${Math.floor(Math.random() * 30 + 40)}%` }
+          );
+          newHighlights.push(
+            { 
+              id: `h${Date.now()}-1`, 
+              text: 'Checkout process has high abandonment rate', 
+              serviceArea: 'Ecommerce Platforms'
+            },
+            { 
+              id: `h${Date.now()}-2`, 
+              text: 'Mobile site has poor performance metrics', 
+              serviceArea: 'Website'
+            }
+          );
+        } else if (bucket.name === 'Retention') {
+          newMetricSignals.push(
+            { id: `m${Date.now()}-1`, name: 'Churn Rate', value: `${(Math.random() * 5 + 1).toFixed(1)}%` },
+            { id: `m${Date.now()}-2`, name: 'LTV', value: `$${Math.floor(Math.random() * 500 + 200)}` }
+          );
+          newHighlights.push(
+            { 
+              id: `h${Date.now()}-1`, 
+              text: 'Email campaigns have declining open rates', 
+              serviceArea: 'CRM'
+            },
+            { 
+              id: `h${Date.now()}-2`, 
+              text: 'App retention drops significantly after 30 days', 
+              serviceArea: 'App'
+            }
+          );
         }
-        return bucket;
-      })
-    );
+        
+        // Update the bucket with new metrics and highlights
+        setBuckets(prevBuckets => 
+          prevBuckets.map(b => {
+            if (b.name === bucket.name) {
+              return {
+                ...b,
+                data: {
+                  ...b.data,
+                  metricSignals: [
+                    ...b.data.metricSignals,
+                    ...newMetricSignals
+                  ],
+                  highlights: [
+                    ...b.data.highlights,
+                    ...newHighlights
+                  ]
+                }
+              };
+            }
+            return b;
+          })
+        );
+        
+        // Save changes for this bucket
+        if (businessId) {
+          // Format the updated highlights into a description
+          const updatedHighlights = [...bucket.data.highlights, ...newHighlights];
+          const highlightsText = updatedHighlights.map(h => 
+            `- ${h.text} (${h.serviceArea})`
+          ).join('\n');
+          
+          const serviceAreasText = bucket.serviceAreas.join(', ');
+          const description = `Service Areas: ${serviceAreasText}\n\nHighlights:\n${highlightsText}`;
+          
+          await updateScorecardCategory(businessId, {
+            name: bucket.name,
+            score: bucket.data.score,
+            highlights: description,
+            serviceAreas: bucket.serviceAreas,
+            highlightsData: {
+              items: updatedHighlights,
+              metricSignals: [...bucket.data.metricSignals, ...newMetricSignals],
+              score: bucket.data.score,
+              maxScore: bucket.data.maxScore,
+              serviceAreas: bucket.serviceAreas
+            }
+          });
+        }
+      }
+      
+      // After all audits, reload data to ensure we're showing the latest
+      await reloadData();
+      alert('Full audit completed successfully. Added metrics and highlights to all categories.');
+    } catch (error) {
+      console.error('Error running full audit:', error);
+      alert(`Error running full audit: ${error}`);
+    } finally {
+      setIsRunningFullAudit(false);
+    }
   };
 
   const handlePublishToggle = async () => {
@@ -333,6 +933,50 @@ export default function Scorecard() {
     }
   };
 
+  const startEditingHighlight = (bucketName: string, highlight: Highlight) => {
+    setEditingHighlight({...highlight});
+    setIsEditingHighlight(bucketName);
+  };
+
+  const handleUpdateHighlight = async (bucketName: string) => {
+    if (!businessId || !editingHighlight || !editingHighlight.text || !editingHighlight.serviceArea) return;
+    
+    setIsSavingHighlight(true);
+    
+    try {
+      // Assuming you have an updateScorecardHighlight function similar to addScorecardHighlight
+      const result = await updateScorecardHighlight(
+        businessId,
+        bucketName,
+        editingHighlight.id,
+        {
+          text: editingHighlight.text,
+          serviceArea: editingHighlight.serviceArea,
+          relatedMetricId: editingHighlight.relatedMetricId
+        }
+      );
+      
+      if (result.success) {
+        // Reload data to get the updated highlights
+        await reloadData();
+      }
+    } catch (error) {
+      console.error('Error updating highlight:', error);
+    } finally {
+      setIsEditingHighlight(null);
+      setEditingHighlight(null);
+      setIsSavingHighlight(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+      </div>
+    );
+  }
+  
   return (
     <div className="space-y-8">
       <div className="flex justify-between items-center">
@@ -343,9 +987,23 @@ export default function Scorecard() {
             onToggle={handlePublishToggle}
             isLoading={isPublishing}
           />
-          <Button variant="outline" size="sm">
-            <Zap className="h-4 w-4 mr-1" />
-            Run Full Audit
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={runFullAudit}
+            disabled={isRunningFullAudit}
+          >
+            {isRunningFullAudit ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                Running...
+              </>
+            ) : (
+              <>
+                <Zap className="h-4 w-4 mr-1" />
+                Run Full Audit
+              </>
+            )}
           </Button>
         </div>
       </div>
@@ -374,6 +1032,7 @@ export default function Scorecard() {
                       type="number"
                       value={bucket.data.score}
                       onChange={(e) => handleScoreChange(bucket.name, parseInt(e.target.value, 10) || 0)}
+                      onBlur={() => handleScoreInputBlur(bucket.name)}
                       min="0"
                       max={bucket.data.maxScore}
                       className="w-12 text-center py-1 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
@@ -417,9 +1076,19 @@ export default function Scorecard() {
                       variant="outline" 
                       size="sm"
                       onClick={() => runAudit(bucket.name)}
+                      disabled={isRunningAudit === bucket.name}
                     >
-                      <Zap className="h-4 w-4 mr-1" />
-                      Run Audit
+                      {isRunningAudit === bucket.name ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                          Running...
+                        </>
+                      ) : (
+                        <>
+                          <Zap className="h-4 w-4 mr-1" />
+                          Run Audit
+                        </>
+                      )}
                     </Button>
                   </div>
                 </div>
@@ -479,9 +1148,16 @@ export default function Scorecard() {
                         variant="primary" 
                         size="sm"
                         onClick={() => handleAddHighlight(bucket.name)}
-                        disabled={!newHighlight.text || !newHighlight.serviceArea}
+                        disabled={!newHighlight.text || !newHighlight.serviceArea || isSavingHighlight}
                       >
-                        Save
+                        {isSavingHighlight ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                            Saving...
+                          </>
+                        ) : (
+                          'Save'
+                        )}
                       </Button>
                     </div>
                   </div>
@@ -494,35 +1170,119 @@ export default function Scorecard() {
                         key={highlight.id} 
                         className={`p-3 ${bucket.bgColor} rounded-md border ${bucket.borderColor} relative group`}
                       >
-                        <button
-                          onClick={() => handleDeleteHighlight(bucket.name, highlight.id)}
-                          className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-                        >
-                          <X className={`h-4 w-4 ${bucket.textColor}`} />
-                        </button>
-                        <div className="flex items-start">
-                          <AlertCircle className={`flex-shrink-0 h-5 w-5 mr-2 mt-0.5 ${bucket.textColor}`} />
+                        {isEditingHighlight === bucket.name && editingHighlight?.id === highlight.id ? (
+                          // Inline edit form
                           <div>
-                            <p className="text-sm">{highlight.text}</p>
-                            <div className="flex flex-wrap items-center gap-2 mt-1">
-                              <span className={`text-xs font-medium ${bucket.textColor} inline-block`}>
-                                {highlight.serviceArea}
-                              </span>
-                              {highlight.relatedMetricId && (
-                                <span className="bg-[#f9f9f9] border border-[#e9e9e9] text-[#555555] px-2 py-0.5 rounded-full inline-flex items-center font-mono text-xs">
-                                  {bucket.data.metricSignals.find(m => m.id === highlight.relatedMetricId)?.name}
-                                </span>
-                              )}
+                            <textarea 
+                              value={editingHighlight.text}
+                              onChange={(e) => setEditingHighlight({...editingHighlight, text: e.target.value})}
+                              placeholder="Enter highlight..."
+                              className="w-full p-2 mb-2 bg-white border border-gray-200 rounded"
+                              rows={2}
+                            />
+                            <div className="flex flex-col space-y-2">
+                              <div className="flex items-center space-x-2">
+                                <label className="text-sm font-medium">Service Area:</label>
+                                <select 
+                                  value={editingHighlight.serviceArea}
+                                  onChange={(e) => setEditingHighlight({...editingHighlight, serviceArea: e.target.value})}
+                                  className="p-2 pr-8 bg-white border border-gray-200 rounded appearance-none flex-grow"
+                                  style={{ backgroundImage: "url(\"data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e\")", backgroundPosition: "right 0.5rem center", backgroundRepeat: "no-repeat", backgroundSize: "1.5em 1.5em" }}
+                                >
+                                  {bucket.serviceAreas.map(area => (
+                                    <option key={area} value={area}>{area}</option>
+                                  ))}
+                                  <option value="Other">Other</option>
+                                </select>
+                              </div>
+                              
+                              <div className="flex items-center space-x-2">
+                                <label className="text-sm font-medium">Related Metric:</label>
+                                <select 
+                                  value={editingHighlight.relatedMetricId || ""}
+                                  onChange={(e) => setEditingHighlight({...editingHighlight, relatedMetricId: e.target.value})}
+                                  className="p-2 pr-8 bg-white border border-gray-200 rounded appearance-none flex-grow"
+                                  style={{ backgroundImage: "url(\"data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e\")", backgroundPosition: "right 0.5rem center", backgroundRepeat: "no-repeat", backgroundSize: "1.5em 1.5em" }}
+                                >
+                                  <option value="">None</option>
+                                  {bucket.data.metricSignals.map(signal => (
+                                    <option key={signal.id} value={signal.id}>{signal.name}</option>
+                                  ))}
+                                </select>
+                              </div>
+                            </div>
+                            <div className="flex justify-end space-x-2 mt-2">
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => {
+                                  setEditingHighlight(null);
+                                  setIsEditingHighlight(null);
+                                }}
+                              >
+                                Cancel
+                              </Button>
+                              <Button 
+                                variant="primary" 
+                                size="sm"
+                                onClick={() => handleUpdateHighlight(bucket.name)}
+                                disabled={!editingHighlight.text || !editingHighlight.serviceArea || isSavingHighlight}
+                              >
+                                {isSavingHighlight ? (
+                                  <>
+                                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                                    Saving...
+                                  </>
+                                ) : (
+                                  'Save'
+                                )}
+                              </Button>
                             </div>
                           </div>
-                        </div>
+                        ) : (
+                          // Regular highlight view
+                          <>
+                            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex space-x-1">
+                              <button
+                                onClick={() => startEditingHighlight(bucket.name, highlight)}
+                                className="cursor-pointer"
+                                title="Edit highlight"
+                              >
+                                <Pencil className={`h-3.5 w-3.5 ${bucket.textColor}`} />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteHighlight(bucket.name, highlight.id)}
+                                className="cursor-pointer"
+                                title="Delete highlight"
+                              >
+                                <X className={`h-4 w-4 ${bucket.textColor}`} />
+                              </button>
+                            </div>
+                            <div className="flex items-start">
+                              <AlertCircle className={`flex-shrink-0 h-5 w-5 mr-2 mt-0.5 ${bucket.textColor}`} />
+                              <div>
+                                <p className="text-sm">{highlight.text}</p>
+                                <div className="flex flex-wrap items-center gap-2 mt-1">
+                                  <span className={`text-xs font-medium ${bucket.textColor} inline-block`}>
+                                    {highlight.serviceArea}
+                                  </span>
+                                  {highlight.relatedMetricId && (
+                                    <span className="bg-[#f9f9f9] border border-[#e9e9e9] text-[#555555] px-2 py-0.5 rounded-full inline-flex items-center font-mono text-xs">
+                                      {bucket.data.metricSignals.find(m => m.id === highlight.relatedMetricId)?.name}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </>
+                        )}
                       </div>
                     ))}
                   </div>
                 ) : (
                   <div className="text-center py-6 text-gray-500">
                     <BarChart2 className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-                    <p>No issues identified yet. Add one or run an audit to assess performance.</p>
+                    <p>No issues identified yet.</p>
                   </div>
                 )}
                 
@@ -534,8 +1294,14 @@ export default function Scorecard() {
                       {bucket.data.metricSignals.map((signal) => (
                         <div
                           key={signal.id}
-                          className="px-3 py-1 rounded-full bg-[#f9f9f9] border border-[#e9e9e9] text-[#555555] flex items-center font-mono"
+                          className="px-3 py-1 rounded-full bg-[#f9f9f9] border border-[#e9e9e9] text-[#555555] flex items-center font-mono relative group"
                         >
+                          <button
+                            onClick={() => handleDeleteMetricSignal(bucket.name, signal.id)}
+                            className="absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer bg-white rounded-full border border-gray-200 p-0.5"
+                          >
+                            <X className="h-3 w-3 text-gray-500" />
+                          </button>
                           <span className="font-medium text-xs">{signal.name}:</span>
                           <span className="ml-1 text-xs text-black font-bold">{signal.value}</span>
                         </div>

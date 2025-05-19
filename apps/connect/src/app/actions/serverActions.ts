@@ -537,4 +537,138 @@ export async function getAllMetricsAction() {
     console.error('Failed to fetch metrics:', error);
     return { success: false, error: 'Failed to fetch metrics' };
   }
+}
+
+// Goals actions
+export async function getBusinessGoalsAction(businessId: string) {
+  try {
+    const goals = await prisma.goal.findMany({
+      where: { businessId },
+      orderBy: { createdAt: 'desc' }
+    });
+    
+    return { success: true, goals };
+  } catch (error) {
+    console.error('Error getting business goals:', error);
+    return { success: false, error: 'Failed to get business goals' };
+  }
+}
+
+export async function addGoalAction(businessId: string, data: { name: string; description?: string; status?: string; targetDate?: Date }) {
+  try {
+    const goal = await prisma.goal.create({
+      data: {
+        businessId,
+        name: data.name,
+        description: data.description,
+        status: data.status as any || 'IN_PROGRESS',
+        targetDate: data.targetDate
+      }
+    });
+    
+    return { success: true, goal };
+  } catch (error) {
+    console.error('Error adding goal:', error);
+    return { success: false, error: 'Failed to add goal' };
+  }
+}
+
+export async function updateGoalAction(goalId: string, data: { name?: string; description?: string; status?: string; targetDate?: Date }) {
+  try {
+    const goal = await prisma.goal.update({
+      where: { id: goalId },
+      data: {
+        name: data.name,
+        description: data.description,
+        status: data.status as any,
+        targetDate: data.targetDate
+      }
+    });
+    
+    return { success: true, goal };
+  } catch (error) {
+    console.error('Error updating goal:', error);
+    return { success: false, error: 'Failed to update goal' };
+  }
+}
+
+export async function deleteGoalAction(goalId: string) {
+  try {
+    await prisma.goal.delete({
+      where: { id: goalId }
+    });
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Error deleting goal:', error);
+    return { success: false, error: 'Failed to delete goal' };
+  }
+}
+
+// KPIs actions
+export async function getBusinessKPIsAction(businessId: string) {
+  try {
+    const kpis = await prisma.kPI.findMany({
+      where: { businessId },
+      orderBy: { createdAt: 'desc' }
+    });
+    
+    return { success: true, kpis };
+  } catch (error) {
+    console.error('Error getting business KPIs:', error);
+    return { success: false, error: 'Failed to get business KPIs' };
+  }
+}
+
+export async function addKPIAction(businessId: string, data: { name: string; description?: string; target?: string; current?: string; unit?: string }) {
+  try {
+    const kpi = await prisma.kPI.create({
+      data: {
+        businessId,
+        name: data.name,
+        description: data.description,
+        target: data.target,
+        current: data.current,
+        unit: data.unit
+      }
+    });
+    
+    return { success: true, kpi };
+  } catch (error) {
+    console.error('Error adding KPI:', error);
+    return { success: false, error: 'Failed to add KPI' };
+  }
+}
+
+export async function updateKPIAction(kpiId: string, data: { name?: string; description?: string; target?: string; current?: string; unit?: string }) {
+  try {
+    const kpi = await prisma.kPI.update({
+      where: { id: kpiId },
+      data: {
+        name: data.name,
+        description: data.description,
+        target: data.target,
+        current: data.current,
+        unit: data.unit
+      }
+    });
+    
+    return { success: true, kpi };
+  } catch (error) {
+    console.error('Error updating KPI:', error);
+    return { success: false, error: 'Failed to update KPI' };
+  }
+}
+
+export async function deleteKPIAction(kpiId: string) {
+  try {
+    await prisma.kPI.delete({
+      where: { id: kpiId }
+    });
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Error deleting KPI:', error);
+    return { success: false, error: 'Failed to delete KPI' };
+  }
 } 

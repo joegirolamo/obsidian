@@ -32,9 +32,11 @@ export default function AdminLayout({
 
   return (
     <div className="flex min-h-screen bg-[#F8F9FA]">
-      <AdminNav />
-      <main className="flex-1 pl-64 bg-[#F8F9FA]">
-        <div className="layout-container py-8">
+      <div className="fixed inset-y-0 left-0 w-64 overflow-hidden">
+        <AdminNav />
+      </div>
+      <main className="flex-1 ml-64 bg-[#F8F9FA]">
+        <div className="layout-container py-8 px-6">
           {children}
         </div>
       </main>

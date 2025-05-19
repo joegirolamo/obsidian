@@ -12,7 +12,8 @@ import {
   Building,
   Plus,
   Wrench,
-  LineChart
+  LineChart,
+  Brain
 } from 'lucide-react';
 import ObsidianLogo from './ObsidianLogo';
 import { getBusinessByAdminId } from '@/app/actions/business';
@@ -140,6 +141,13 @@ export default function AdminNav() {
         subItems: [
           { label: 'Scorecards', href: '/admin/dvcp/scorecards', icon: Target },
           { label: 'Opportunities', href: '/admin/dvcp/opportunities', icon: BarChart2 }
+        ]
+      },
+      {
+        label: 'AI',
+        href: '/admin/ai-brain',
+        subItems: [
+          { label: 'AI Brain', href: '/admin/ai-brain', icon: Brain }
         ]
       }
     ];

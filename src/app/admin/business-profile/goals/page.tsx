@@ -1,110 +1,155 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Target, BarChart2 } from 'lucide-react';
 import Card from '@/components/shared/Card';
 import Button from '@/components/shared/Button';
+import { useSearchParams } from 'next/navigation';
+import { 
+  getBusinessGoalsAction, 
+  addGoalAction, 
+  deleteGoalAction, 
+  getBusinessKPIsAction, 
+  addKPIAction, 
+  deleteKPIAction 
+} from '@/app/actions/serverActions';
 
 interface Goal {
   id: string;
   name: string;
-  description: string;
+  description: string | null;
+  status: string;
+  targetDate: Date | null;
 }
 
 interface KPI {
   id: string;
   name: string;
-  description: string;
+  description: string | null;
+  target: string | null;
+  current: string | null;
+  unit: string | null;
 }
 
 export default function GoalsPage() {
-  const [goals, setGoals] = useState<Goal[]>([
-    {
-      id: '1',
-      name: 'Increase Revenue by 20%',
-      description: 'Achieve 20% revenue growth through improved conversion rates and customer retention'
-    },
-    {
-      id: '2',
-      name: 'Reduce Customer Acquisition Cost',
-      description: 'Lower CAC by optimizing marketing channels and improving lead quality'
-    },
-    {
-      id: '3',
-      name: 'Improve Conversion Rate',
-      description: 'Increase website and landing page conversion rates by 15%'
-    },
-    {
-      id: '4',
-      name: 'Expand Market Share',
-      description: 'Grow market presence in target segments by 25%'
-    },
-    {
-      id: '5',
-      name: 'Enhance Customer Retention',
-      description: 'Improve customer loyalty and reduce churn rate by 10%'
-    }
-  ]);
-  const [kpis, setKPIs] = useState<KPI[]>([
-    {
-      id: '1',
-      name: 'Monthly Recurring Revenue (MRR)',
-      description: 'Total predictable revenue generated each month'
-    },
-    {
-      id: '2',
-      name: 'Customer Acquisition Cost (CAC)',
-      description: 'Average cost to acquire a new customer'
-    },
-    {
-      id: '3',
-      name: 'Conversion Rate',
-      description: 'Percentage of visitors who complete desired actions'
-    },
-    {
-      id: '4',
-      name: 'Customer Lifetime Value (CLV)',
-      description: 'Predicted net profit attributed to the entire future relationship with a customer'
-    },
-    {
-      id: '5',
-      name: 'Churn Rate',
-      description: 'Percentage of customers who stop using the product/service'
-    },
-    {
-      id: '6',
-      name: 'Net Promoter Score (NPS)',
-      description: 'Measure of customer loyalty and satisfaction'
-    }
-  ]);
+  const searchParams = useSearchParams();
+  const businessId = searchParams.get('businessId') || '';
+  
+  const [goals, setGoals] = useState<Goal[]>([]);
+  const [kpis, setKPIs] = useState<KPI[]>([]);
   const [isAddingGoal, setIsAddingGoal] = useState(false);
   const [isAddingKPI, setIsAddingKPI] = useState(false);
   const [newGoal, setNewGoal] = useState({ name: '', description: '' });
-  const [newKPI, setNewKPI] = useState({ name: '', description: '' });
+  const [newKPI, setNewKPI] = useState({ name: '', description: '', target: '', current: '', unit: '' });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleAddGoal = () => {
-    if (newGoal.name.trim()) {
-      setGoals([...goals, { id: Date.now().toString(), ...newGoal }]);
-      setNewGoal({ name: '', description: '' });
+  useEffect(() => {
+    if (!businessId) {
+      setError('No business selected');
+      setLoading(false);
+      return;
     }
-    setIsAddingGoal(false);
-  };
 
-  const handleAddKPI = () => {
-    if (newKPI.name.trim()) {
-      setKPIs([...kpis, { id: Date.now().toString(), ...newKPI }]);
-      setNewKPI({ name: '', description: '' });
+    const loadData = async () => {
+      try {
+        // Load goals
+        const goalsResult = await getBusinessGoalsAction(businessId);
+        if (goalsResult.success) {
+          setGoals(goalsResult.goals);
+        }
+
+        // Load KPIs
+        const kpisResult = await getBusinessKPIsAction(businessId);
+        if (kpisResult.success) {
+          setKPIs(kpisResult.kpis);
+        }
+      } catch (error) {
+        console.error('Error loading data:', error);
+        setError('Failed to load data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, [businessId]);
+
+  const handleAddGoal = async () => {
+    if (newGoal.name.trim() && businessId) {
+      try {
+        const result = await addGoalAction(businessId, newGoal);
+        if (result.success) {
+          setGoals([result.goal, ...goals]);
+          setNewGoal({ name: '', description: '' });
+        } else {
+          setError(result.error || 'Failed to add goal');
+        }
+      } catch (error) {
+        console.error('Error adding goal:', error);
+        setError('An unexpected error occurred');
+      }
+      setIsAddingGoal(false);
     }
-    setIsAddingKPI(false);
   };
 
-  const handleRemoveGoal = (id: string) => {
-    setGoals(goals.filter(goal => goal.id !== id));
+  const handleAddKPI = async () => {
+    if (newKPI.name.trim() && businessId) {
+      try {
+        const result = await addKPIAction(businessId, newKPI);
+        if (result.success) {
+          setKPIs([result.kpi, ...kpis]);
+          setNewKPI({ name: '', description: '', target: '', current: '', unit: '' });
+        } else {
+          setError(result.error || 'Failed to add KPI');
+        }
+      } catch (error) {
+        console.error('Error adding KPI:', error);
+        setError('An unexpected error occurred');
+      }
+      setIsAddingKPI(false);
+    }
   };
 
-  const handleRemoveKPI = (id: string) => {
-    setKPIs(kpis.filter(kpi => kpi.id !== id));
+  const handleRemoveGoal = async (id: string) => {
+    try {
+      const result = await deleteGoalAction(id);
+      if (result.success) {
+        setGoals(goals.filter(goal => goal.id !== id));
+      } else {
+        setError(result.error || 'Failed to delete goal');
+      }
+    } catch (error) {
+      console.error('Error deleting goal:', error);
+      setError('An unexpected error occurred');
+    }
   };
+
+  const handleRemoveKPI = async (id: string) => {
+    try {
+      const result = await deleteKPIAction(id);
+      if (result.success) {
+        setKPIs(kpis.filter(kpi => kpi.id !== id));
+      } else {
+        setError(result.error || 'Failed to delete KPI');
+      }
+    } catch (error) {
+      console.error('Error deleting KPI:', error);
+      setError('An unexpected error occurred');
+    }
+  };
+
+  if (loading) {
+    return <div className="flex justify-center items-center min-h-screen">Loading...</div>;
+  }
+
+  if (error) {
+    return <div className="text-red-500 text-center">{error}</div>;
+  }
+
+  if (!businessId) {
+    return <div className="text-center">Please select a business</div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -138,9 +183,19 @@ export default function GoalsPage() {
               {goals.map((goal) => (
                 <div key={goal.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{goal.name}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-medium truncate">{goal.name}</p>
+                      <span className="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
+                        {goal.status.replace('_', ' ')}
+                      </span>
+                    </div>
                     {goal.description && (
                       <p className="text-xs text-gray-500 truncate">{goal.description}</p>
+                    )}
+                    {goal.targetDate && (
+                      <p className="text-xs text-gray-500">
+                        Target: {new Date(goal.targetDate).toLocaleDateString()}
+                      </p>
                     )}
                   </div>
                   <Button
@@ -232,6 +287,18 @@ export default function GoalsPage() {
                     {kpi.description && (
                       <p className="text-xs text-gray-500 truncate">{kpi.description}</p>
                     )}
+                    <div className="flex items-center gap-2 mt-1">
+                      {kpi.current && (
+                        <span className="text-xs bg-gray-100 px-2 py-0.5 rounded text-gray-700">
+                          Current: {kpi.current}{kpi.unit ? ` ${kpi.unit}` : ''}
+                        </span>
+                      )}
+                      {kpi.target && (
+                        <span className="text-xs bg-green-100 px-2 py-0.5 rounded text-green-700">
+                          Target: {kpi.target}{kpi.unit ? ` ${kpi.unit}` : ''}
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <Button
                     variant="outline"
@@ -260,6 +327,29 @@ export default function GoalsPage() {
                       className="flex-1 text-sm px-3 py-1.5 border border-gray-300 rounded-md bg-white focus:border-primary focus:ring-primary"
                       rows={2}
                     />
+                    <div className="grid grid-cols-3 gap-2">
+                      <input
+                        type="text"
+                        value={newKPI.current}
+                        onChange={(e) => setNewKPI({ ...newKPI, current: e.target.value })}
+                        placeholder="Current value"
+                        className="text-sm px-3 py-1.5 border border-gray-300 rounded-md bg-white focus:border-primary focus:ring-primary"
+                      />
+                      <input
+                        type="text"
+                        value={newKPI.target}
+                        onChange={(e) => setNewKPI({ ...newKPI, target: e.target.value })}
+                        placeholder="Target value"
+                        className="text-sm px-3 py-1.5 border border-gray-300 rounded-md bg-white focus:border-primary focus:ring-primary"
+                      />
+                      <input
+                        type="text"
+                        value={newKPI.unit}
+                        onChange={(e) => setNewKPI({ ...newKPI, unit: e.target.value })}
+                        placeholder="Unit (e.g. %)"
+                        className="text-sm px-3 py-1.5 border border-gray-300 rounded-md bg-white focus:border-primary focus:ring-primary"
+                      />
+                    </div>
                   </div>
                   <div className="flex gap-2 self-end">
                     <Button
@@ -267,7 +357,7 @@ export default function GoalsPage() {
                       size="sm"
                       onClick={() => {
                         setIsAddingKPI(false);
-                        setNewKPI({ name: '', description: '' });
+                        setNewKPI({ name: '', description: '', target: '', current: '', unit: '' });
                       }}
                     >
                       Cancel

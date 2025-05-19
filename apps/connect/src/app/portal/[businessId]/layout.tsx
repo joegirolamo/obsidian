@@ -3,9 +3,10 @@
 import { ReactNode, useEffect, use } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { PortalStepper } from './PortalStepper';
+import ObsidianLogo from '@/components/ObsidianLogo';
 
-const INTAKE_PATHS = ['metrics', 'tools', 'questions'];
-const EXCLUDED_PATHS = ['dashboard', 'thank-you'];
+const INTAKE_PATHS = ['metrics', 'tools', 'questions', 'thank-you'];
+const EXCLUDED_PATHS = ['dashboard'];
 
 export default function PortalLayout({
   children,
@@ -24,7 +25,7 @@ export default function PortalLayout({
   const showStepper = INTAKE_PATHS.includes(currentPath);
 
   useEffect(() => {
-    // Don't check on dashboard or thank-you page
+    // Don't check on dashboard page
     if (EXCLUDED_PATHS.includes(currentPath)) {
       return;
     }
@@ -53,11 +54,18 @@ export default function PortalLayout({
 
   return (
     <div className="min-h-screen p-4">
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-7xl mx-auto pt-10">
+        <div className="flex items-center justify-center mb-8">
+          <div className="flex items-center gap-2">
+            <ObsidianLogo className="w-8 h-8" />
+            <h1 className="text-2xl font-bold">Obsidian</h1>
+          </div>
+        </div>
+        
         <div className="mb-8">
           {showStepper && <PortalStepper />}
         </div>
-        <div className="pb-[50px]">
+        <div className="pb-[50px] w-full">
           {children}
         </div>
       </div>

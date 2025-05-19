@@ -2,72 +2,101 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { OpportunityStatus } from "@prisma/client";
 
-export async function createOpportunity(
+// Simple type for an opportunity
+type Opportunity = {
+  id: string;
+  title: string;
+  description: string;
+  status: OpportunityStatus;
+  businessId: string;
+  isPublished: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  category: string;
+};
+
+// Add an opportunity
+export async function addOpportunity(
   businessId: string,
-  data: {
-    title: string;
-    description: string;
-    category: string;
-  }
+  opportunity: { title: string; description: string; category: string }
 ) {
   try {
-    const opportunity = await prisma.opportunity.create({
+    const newOpportunity = await prisma.opportunity.create({
       data: {
+        title: opportunity.title,
+        description: opportunity.description,
+        status: OpportunityStatus.OPEN,
         businessId,
-        title: data.title,
-        description: data.description,
-        category: data.category,
-      },
+        isPublished: false,
+        category: opportunity.category
+      }
     });
 
     revalidatePath('/admin/opportunities');
-    return { success: true, opportunity };
+    return { success: true, opportunity: newOpportunity };
   } catch (error) {
-    console.error('Failed to create opportunity:', error);
-    return { success: false, error: 'Failed to create opportunity' };
+    console.error('Error adding opportunity:', error);
+    return { success: false, error: 'Failed to add opportunity' };
   }
 }
 
-export async function updateOpportunity(
-  opportunityId: string,
-  data: {
-    title: string;
-    description: string;
-    category?: string;
-    status?: 'OPEN' | 'IN_PROGRESS' | 'COMPLETED' | 'CLOSED';
-  }
-) {
-  try {
-    const opportunity = await prisma.opportunity.update({
-      where: { id: opportunityId },
-      data: {
-        title: data.title,
-        description: data.description,
-        ...(data.category && { category: data.category }),
-        ...(data.status && { status: data.status }),
-      },
-    });
-
-    revalidatePath('/admin/opportunities');
-    return { success: true, opportunity };
-  } catch (error) {
-    console.error('Failed to update opportunity:', error);
-    return { success: false, error: 'Failed to update opportunity' };
-  }
-}
-
+// Delete an opportunity
 export async function deleteOpportunity(opportunityId: string) {
   try {
     await prisma.opportunity.delete({
-      where: { id: opportunityId },
+      where: { id: opportunityId }
     });
 
     revalidatePath('/admin/opportunities');
     return { success: true };
   } catch (error) {
-    console.error('Failed to delete opportunity:', error);
+    console.error('Error deleting opportunity:', error);
     return { success: false, error: 'Failed to delete opportunity' };
+  }
+}
+
+// Update an opportunity
+export async function updateOpportunity(
+  opportunityId: string,
+  updates: { title?: string; description?: string; status?: OpportunityStatus; isPublished?: boolean }
+) {
+  try {
+    const updatedOpportunity = await prisma.opportunity.update({
+      where: { id: opportunityId },
+      data: updates
+    });
+
+    revalidatePath('/admin/opportunities');
+    return { success: true, opportunity: updatedOpportunity };
+  } catch (error) {
+    console.error('Error updating opportunity:', error);
+    return { success: false, error: 'Failed to update opportunity' };
+  }
+}
+
+// Get all opportunities for a business
+export async function getOpportunities(businessId: string) {
+  try {
+    const opportunities = await prisma.opportunity.findMany({
+      where: {
+        businessId
+      },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        status: true,
+        isPublished: true,
+        category: true
+      }
+    });
+
+    return { success: true, opportunities };
+  } catch (error) {
+    console.error('Error getting opportunities:', error);
+    return { success: false, error: 'Failed to get opportunities' };
   }
 }
 

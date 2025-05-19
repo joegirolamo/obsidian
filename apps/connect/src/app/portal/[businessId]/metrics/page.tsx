@@ -75,11 +75,46 @@ export default function MetricsPage() {
   };
 
   if (isLoading) {
-    return <div className="flex justify-center items-center min-h-screen">Loading...</div>;
+    return (
+      <div className="max-w-2xl mx-auto">
+        <div className="flex justify-center items-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      </div>
+    );
   }
 
   if (error) {
     return <div className="text-red-500">{error}</div>;
+  }
+
+  if (metrics.length === 0) {
+    return (
+      <form action={handleSubmit}>
+        <div className="max-w-2xl mx-auto space-y-6">
+          <div className="bg-white p-8 rounded-lg shadow text-center">
+            <div className="flex flex-col items-center justify-center py-12">
+              <svg
+                className="w-12 h-12 text-gray-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                />
+              </svg>
+              <h3 className="mt-4 text-lg font-medium text-gray-900">No metric requests at this time.</h3>
+            </div>
+          </div>
+          <NavigationButtons showBack={false} />
+        </div>
+      </form>
+    );
   }
 
   return (

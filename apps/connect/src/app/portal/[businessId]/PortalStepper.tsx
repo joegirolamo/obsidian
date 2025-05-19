@@ -14,6 +14,7 @@ export function useStepNavigation() {
   const currentStep = pathname.split('/').pop() || 'metrics';
   const businessId = pathname.split('/')[2];
   const currentIndex = steps.findIndex(s => s.id === currentStep);
+  const isThankYouPage = currentStep === 'thank-you';
 
   const navigateToStep = (stepId: string) => {
     router.push(`/portal/${businessId}/${stepId}`);
@@ -24,13 +25,14 @@ export function useStepNavigation() {
     currentIndex,
     businessId,
     navigateToStep,
+    isThankYouPage,
     nextStep: currentIndex < steps.length - 1 ? steps[currentIndex + 1] : null,
     prevStep: currentIndex > 0 ? steps[currentIndex - 1] : null,
   };
 }
 
 export function PortalStepper() {
-  const { currentStep, currentIndex, navigateToStep } = useStepNavigation();
+  const { currentStep, currentIndex, navigateToStep, isThankYouPage } = useStepNavigation();
 
   return (
     <div className="relative max-w-2xl mx-auto px-4 py-8">
@@ -40,7 +42,8 @@ export function PortalStepper() {
         
         {steps.map((step, index) => {
           const isActive = step.id === currentStep;
-          const isPast = currentIndex > index;
+          // Mark all steps as past (completed) when on the thank-you page
+          const isPast = isThankYouPage || currentIndex > index;
           
           return (
             <div key={step.id} className="flex flex-col items-center">

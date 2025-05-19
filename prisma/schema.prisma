@@ -75,24 +75,29 @@ model VerificationToken {
 }
 
 model Business {
-  id             String           @id @default(cuid())
-  name           String
-  code           String           @unique
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
-  adminId        String
-  industry       String?
-  website        String?
-  connections    Json?            @default("{}")
-  description    String?
-  properties     String[]         @default([])
-  admin          User             @relation("BusinessAdmin", fields: [adminId], references: [id])
-  clientPortal   ClientPortal?
-  IntakeQuestion IntakeQuestion[]
-  metrics        Metric[]
-  opportunities  Opportunity[]
-  tools          Tool[]
-  users          User[]           @relation("BusinessUsers")
+  id                       String           @id @default(cuid())
+  name                     String
+  code                     String           @unique
+  createdAt                DateTime         @default(now())
+  updatedAt                DateTime         @updatedAt
+  adminId                  String
+  industry                 String?
+  website                  String?
+  connections              Json?            @default("{}")
+  description              String?
+  properties               String[]         @default([])
+  isOpportunitiesPublished Boolean          @default(false)
+  isScorecardPublished     Boolean          @default(false)
+  admin                    User             @relation("BusinessAdmin", fields: [adminId], references: [id])
+  clientPortal             ClientPortal?
+  intakeQuestions          IntakeQuestion[]
+  metrics                  Metric[]
+  opportunities            Opportunity[]
+  scorecards               Scorecard[]
+  tools                    Tool[]
+  users                    User[]           @relation("BusinessUsers")
+  goals                    Goal[]
+  kpis                     KPI[]
 }
 
 model ClientPortal {
@@ -155,16 +160,32 @@ model ToolAccess {
 }
 
 model Opportunity {
-  id          String            @id @default(cuid())
-  title       String
-  description String?
-  status      OpportunityStatus @default(OPEN)
-  businessId  String
-  isPublished Boolean           @default(false)
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
-  category    String
-  business    Business          @relation(fields: [businessId], references: [id])
+  id           String            @id @default(cuid())
+  title        String
+  description  String?
+  status       OpportunityStatus @default(OPEN)
+  businessId   String
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  category     String
+  serviceArea  String
+  targetKPI    String?
+  isPublished  Boolean           @default(false)
+  business     Business          @relation(fields: [businessId], references: [id])
+}
+
+model Scorecard {
+  id            String   @id @default(cuid())
+  businessId    String
+  category      String
+  score         Int?
+  maxScore      Int?     @default(100)
+  highlights    Json?    @default("[]")
+  metricSignals Json?    @default("[]")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  isPublished   Boolean  @default(false)
+  business      Business @relation(fields: [businessId], references: [id])
 }
 
 model ToolConfiguration {
@@ -180,30 +201,56 @@ model ToolConfiguration {
 }
 
 model IntakeAnswer {
-  id             String         @id
+  id             String         @id @default(cuid())
   answer         String
   questionId     String
   clientPortalId String
   createdAt      DateTime       @default(now())
-  updatedAt      DateTime
-  ClientPortal   ClientPortal   @relation(fields: [clientPortalId], references: [id])
-  IntakeQuestion IntakeQuestion @relation(fields: [questionId], references: [id])
+  updatedAt      DateTime       @updatedAt
+  clientPortal   ClientPortal   @relation(fields: [clientPortalId], references: [id])
+  question       IntakeQuestion @relation(fields: [questionId], references: [id])
 
   @@unique([questionId, clientPortalId])
 }
 
 model IntakeQuestion {
-  id           String         @id
-  question     String
-  type         QuestionType
-  options      String[]       @default([])
-  isActive     Boolean        @default(true)
-  order        Int            @default(0)
-  businessId   String
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime
-  IntakeAnswer IntakeAnswer[]
-  Business     Business       @relation(fields: [businessId], references: [id])
+  id         String         @id @default(cuid())
+  question   String
+  type       QuestionType
+  options    String[]       @default([])
+  isActive   Boolean        @default(true)
+  order      Int            @default(0)
+  businessId String
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+  area       String         @default("Other")
+  answers    IntakeAnswer[]
+  business   Business       @relation(fields: [businessId], references: [id])
+}
+
+model Goal {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  status      GoalStatus @default(IN_PROGRESS)
+  targetDate  DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  businessId  String
+  business    Business @relation(fields: [businessId], references: [id])
+}
+
+model KPI {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  target      String?
+  current     String?
+  unit        String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  businessId  String
+  business    Business @relation(fields: [businessId], references: [id])
 }
 
 enum UserRole {
@@ -236,4 +283,11 @@ enum QuestionType {
   NUMBER
   BOOLEAN
   SELECT
+}
+
+enum GoalStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+  ON_HOLD
 }
