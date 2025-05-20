@@ -5,6 +5,7 @@ import { useSession, signOut } from 'next-auth/react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Notification from '@/components/Notification';
 import Button from '@/components/Button';
+import { AlertCircle, Save, X } from 'lucide-react';
 
 interface AgencyTool {
   name: string;
@@ -14,11 +15,38 @@ interface AgencyTool {
   requiredEnvVars: string[];
 }
 
+interface AIProvider {
+  name: string;
+  isConfigured: boolean;
+  requiredEnvVars: string[];
+  defaultModel?: string;
+  availableModels?: string[];
+}
+
+interface AIConfigForm {
+  provider: string;
+  apiKey: string;
+  model: string;
+  isActive: boolean;
+}
+
 export default function SettingsPage() {
   const { data: session } = useSession();
   const searchParams = useSearchParams();
   const router = useRouter();
   const [showNotification, setShowNotification] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [aiProviders, setAIProviders] = useState<AIProvider[]>([]);
+  const [aiConfigForm, setAIConfigForm] = useState<AIConfigForm>({
+    provider: 'OpenAI',
+    apiKey: '',
+    model: 'gpt-4.1',
+    isActive: true
+  });
+  const [aiConfigurations, setAIConfigurations] = useState<any[]>([]);
+  
   const [tools, setTools] = useState<AgencyTool[]>([
     {
       name: 'Google Analytics',
@@ -81,12 +109,106 @@ export default function SettingsPage() {
     fetchToolConfigurations();
   }, []);
 
+  // Fetch AI configurations
+  useEffect(() => {
+    const fetchAIConfigurations = async () => {
+      try {
+        const response = await fetch('/api/admin/ai-configuration');
+        const data = await response.json();
+        
+        if (data.success) {
+          setAIProviders(data.providers || []);
+          setAIConfigurations(data.configurations || []);
+          
+          // Set default model from first provider if available
+          if (data.providers?.length > 0) {
+            const provider = data.providers[0];
+            setAIConfigForm(prev => ({
+              ...prev,
+              model: provider.defaultModel || prev.model
+            }));
+          }
+
+          // If we have a configured provider, populate the form
+          if (data.configurations?.length > 0) {
+            const config = data.configurations[0];
+            setAIConfigForm({
+              provider: config.provider,
+              apiKey: config.apiKey,
+              model: config.model,
+              isActive: config.isActive
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching AI configurations:', error);
+      }
+    };
+
+    fetchAIConfigurations();
+  }, []);
+
   const handleNotificationClose = () => {
     setShowNotification(false);
     const url = new URL(window.location.href);
     url.searchParams.delete('success');
     url.searchParams.delete('error');
     router.replace(url.pathname);
+  };
+
+  const handleAIFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value, type } = e.target;
+    
+    setAIConfigForm(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
+    }));
+  };
+
+  const handleSaveAIConfig = async () => {
+    if (!aiConfigForm.apiKey || !aiConfigForm.model) {
+      setError('API Key and Model are required');
+      return;
+    }
+    
+    setIsLoading(true);
+    setError(null);
+    setSuccess(null);
+    
+    try {
+      const response = await fetch('/api/admin/ai-configuration', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          ...aiConfigForm,
+          id: aiConfigurations.length > 0 ? aiConfigurations[0].id : undefined
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        setSuccess('AI configuration saved successfully');
+        
+        // Update local state with new configuration
+        if (aiConfigurations.length === 0) {
+          setAIConfigurations([data.configuration]);
+        } else {
+          setAIConfigurations(prev => 
+            prev.map(c => c.id === data.configuration.id ? data.configuration : c)
+          );
+        }
+      } else {
+        setError(data.error || 'Failed to save AI configuration');
+      }
+    } catch (error) {
+      console.error('Error saving AI configuration:', error);
+      setError('An unexpected error occurred');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -107,6 +229,115 @@ export default function SettingsPage() {
           >
             Sign Out
           </Button>
+        </div>
+      </div>
+
+      {/* AI Configuration Card */}
+      <div className="card mb-8">
+        <div className="card-header">
+          <h2 className="heading-2">AI Configuration</h2>
+        </div>
+        <div className="card-body">
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center text-red-700">
+              <AlertCircle className="h-5 w-5 mr-2" />
+              <p>{error}</p>
+              <button 
+                className="ml-auto text-red-500 hover:text-red-700"
+                onClick={() => setError(null)}
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+          )}
+          
+          {success && (
+            <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center text-green-700">
+              <div className="flex-shrink-0 mr-2">✓</div>
+              <p>{success}</p>
+              <button 
+                className="ml-auto text-green-500 hover:text-green-700"
+                onClick={() => setSuccess(null)}
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+          )}
+          
+          <div className="space-y-6">
+            <div className="p-6 border border-gray-100 rounded-lg">
+              <h3 className="text-lg font-medium mb-4">OpenAI Configuration</h3>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    API Key
+                  </label>
+                  <input
+                    type="password"
+                    name="apiKey"
+                    value={aiConfigForm.apiKey}
+                    onChange={handleAIFormChange}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2"
+                    placeholder="Enter your OpenAI API key"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Model
+                  </label>
+                  <select
+                    name="model"
+                    value={aiConfigForm.model}
+                    onChange={handleAIFormChange}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2"
+                  >
+                    {aiProviders.find(p => p.name === 'OpenAI')?.availableModels?.map(model => (
+                      <option key={model} value={model}>{model}</option>
+                    )) || (
+                      <>
+                        <option value="gpt-4.5">gpt-4.5</option>
+                        <option value="gpt-4.1">gpt-4.1</option>
+                        <option value="gpt-4.1-mini">gpt-4.1-mini</option>
+                        <option value="gpt-4.1-nano">gpt-4.1-nano</option>
+                        <option value="gpt-4o">gpt-4o</option>
+                        <option value="gpt-4o-mini">gpt-4o-mini</option>
+                        <option value="o3">o3</option>
+                        <option value="o4-mini">o4-mini</option>
+                      </>
+                    )}
+                  </select>
+                </div>
+                
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="isActive"
+                    name="isActive"
+                    checked={aiConfigForm.isActive}
+                    onChange={handleAIFormChange}
+                    className="h-4 w-4 border-gray-300 rounded text-blue-600 focus:ring-blue-500"
+                  />
+                  <label htmlFor="isActive" className="ml-2 block text-sm text-gray-700">
+                    Active
+                  </label>
+                </div>
+                
+                <div className="flex justify-end">
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={handleSaveAIConfig}
+                    disabled={isLoading}
+                  >
+                    {isLoading ? 'Saving...' : 'Save Configuration'}
+                    {!isLoading && <Save className="ml-2 h-4 w-4" />}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 

@@ -1,9 +1,15 @@
 export interface Tool {
+  id?: string;
   name: string;
-  description: string;
-  isConfigured: boolean;
-  icon: string;
-  requiredEnvVars: string[];
+  description?: string;
+  businessId?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+  isRequested?: boolean;
+  status?: 'PENDING' | 'GRANTED' | 'DENIED';
+  isConfigured?: boolean;
+  icon?: string;
+  requiredEnvVars?: string[];
 }
 
 export interface ToolConfiguration {

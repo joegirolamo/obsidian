@@ -8,6 +8,7 @@ import { useSearchParams } from 'next/navigation';
 import { publishOpportunities, unpublishOpportunities, getOpportunitiesPublishStatus, getBusinessOpportunities, createOpportunity, deleteOpportunity, generateOpportunitiesWithAI, updateOpportunityStatus, updateOpportunity } from '@/app/actions/opportunity';
 import { getBusinessGoalsAction, getBusinessKPIsAction } from '@/app/actions/serverActions';
 import { OpportunityStatus } from '@prisma/client';
+import ClientTruncatedText from '@/components/ClientTruncatedText';
 
 // Define the sparkle gradient icon as a custom component
 const SparkleGradientIcon = ({className}: {className?: string}) => (
@@ -685,7 +686,10 @@ export default function OpportunitiesPage() {
                               </div>
                             </div>
                             {opportunity.description && (
-                              <p className="text-sm text-gray-600 mt-1">{opportunity.description}</p>
+                              <ClientTruncatedText 
+                                text={opportunity.description} 
+                                className="mt-1"
+                              />
                             )}
                             <div className="flex items-center justify-between mt-2">
                               <span className="text-xs px-2 py-1 rounded-full bg-white border border-gray-200">

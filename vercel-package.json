@@ -1,0 +1,16 @@
+{
+  "name": "obsidian",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "cd apps/connect && npx prisma generate && npm run build",
+    "start": "cd apps/connect && npm run start",
+    "lint": "cd apps/connect && npm run lint"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.5.0"
+  },
+  "devDependencies": {
+    "prisma": "^6.5.0"
+  }
+} 

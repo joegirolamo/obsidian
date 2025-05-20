@@ -1,8 +1,5 @@
 {
+  "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js",
   "/favicon.ico/route": "app/favicon.ico/route.js",
-  "/admin/settings/page": "app/admin/settings/page.js",
-  "/admin/ai-brain/page": "app/admin/ai-brain/page.js",
-  "/portal/[businessId]/dashboard/page": "app/portal/[businessId]/dashboard/page.js",
-  "/admin/dvcp/opportunities/page": "app/admin/dvcp/opportunities/page.js",
-  "/admin/dvcp/scorecards/page": "app/admin/dvcp/scorecards/page.js"
+  "/admin/dvcp/opportunities/page": "app/admin/dvcp/opportunities/page.js"
 }

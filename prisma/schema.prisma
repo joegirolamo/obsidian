@@ -1,10 +1,12 @@
 generator client {
   provider = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
 }
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model Account {
@@ -251,6 +253,16 @@ model KPI {
   updatedAt   DateTime @updatedAt
   businessId  String
   business    Business @relation(fields: [businessId], references: [id])
+}
+
+model AIConfiguration {
+  id        String   @id @default(cuid())
+  provider  String   @default("OpenAI")
+  apiKey    String
+  model     String   @default("gpt-4")
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 enum UserRole {

@@ -1,0 +1,11 @@
+{
+  "buildCommand": "npm install --prefix=../.. && cd ../.. && npx turbo run build --filter={apps/connect}",
+  "outputDirectory": "apps/connect/.next",
+  "devCommand": "cd apps/connect && npx next dev",
+  "git": {
+    "deploymentEnabled": {
+      "main": true
+    }
+  },
+  "framework": "nextjs"
+} 

@@ -186,6 +186,17 @@ model ToolConfiguration {
   @@unique([userId, toolName])
 }
 
+model AIConfiguration {
+  id          String    @id @default(cuid())
+  provider    String    // e.g., "openai", "anthropic", etc.
+  apiKey      String
+  model       String    // e.g., "gpt-4", "gpt-3.5-turbo", etc.
+  options     Json?     // Additional provider-specific options
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
 model IntakeQuestion {
   id         String         @id @default(cuid())
   question   String

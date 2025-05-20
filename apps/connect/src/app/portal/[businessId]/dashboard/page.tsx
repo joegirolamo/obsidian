@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { OpportunityStatus } from "@prisma/client";
 import { AlertCircle, Lightbulb } from "lucide-react";
+import ServerTruncatedText from '@/components/ServerTruncatedText';
 
 // Define types similar to the admin portal
 interface Highlight {
@@ -234,7 +235,7 @@ export default async function Dashboard({
         {/* Show scorecards section if published */}
         {hasScorecardsToShow && (
           <div>
-            <h2 className="text-xl font-semibold mb-6">Performance Scorecard</h2>
+            <h2 className="text-xl font-semibold mb-6">Digital Value Creation Plan</h2>
             
             {/* Using the exact same grid structure as the admin portal */}
             <div className="grid md:grid-cols-2 gap-6">
@@ -370,7 +371,10 @@ export default async function Dashboard({
                                         </span>
                                       </div>
                                       {opportunity.description && (
-                                        <p className="text-xs text-gray-600 mt-1">{opportunity.description}</p>
+                                        <ServerTruncatedText 
+                                          text={opportunity.description} 
+                                          className="mt-1" 
+                                        />
                                       )}
                                       <div className="flex items-center justify-between mt-2">
                                         {opportunity.serviceArea && (

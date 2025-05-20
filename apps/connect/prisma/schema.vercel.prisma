@@ -1,0 +1,309 @@
+generator client {
+  provider = "prisma-client-js"
+  // Skip Prisma CLI version verification for compatibility with Vercel environment
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  // Use Postgres's direct URL if supplied
+  directUrl = env("DIRECT_URL")
+}
+
+// The rest of the schema is the same as your main prisma/schema.prisma file
+// This simplified version is just for build-time usage
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model ToolConnection {
+  id           String    @id @default(cuid())
+  userId       String
+  toolName     String
+  accessToken  String?
+  refreshToken String?
+  expiresAt    DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, toolName])
+}
+
+model User {
+  id                 String              @id @default(cuid())
+  name               String?
+  email              String?             @unique
+  emailVerified      DateTime?
+  image              String?
+  role               String              @default("USER")
+  password           String?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  accounts           Account[]
+  managedBusinesses  Business[]          @relation("BusinessAdmin")
+  clientPortal       ClientPortal?
+  sessions           Session[]
+  toolConfigurations ToolConfiguration[]
+  toolConnections    ToolConnection[]
+  businesses         Business[]          @relation("BusinessUsers")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Business {
+  id                       String           @id @default(cuid())
+  name                     String
+  code                     String           @unique
+  createdAt                DateTime         @default(now())
+  updatedAt                DateTime         @updatedAt
+  adminId                  String
+  industry                 String?
+  website                  String?
+  connections              Json?            @default("{}")
+  description              String?
+  properties               String[]         @default([])
+  isOpportunitiesPublished Boolean          @default(false)
+  isScorecardPublished     Boolean          @default(false)
+  admin                    User             @relation("BusinessAdmin", fields: [adminId], references: [id])
+  clientPortal             ClientPortal?
+  intakeQuestions          IntakeQuestion[]
+  metrics                  Metric[]
+  opportunities            Opportunity[]
+  scorecards               Scorecard[]
+  tools                    Tool[]
+  users                    User[]           @relation("BusinessUsers")
+  goals                    Goal[]
+  kpis                     KPI[]
+}
+
+model ClientPortal {
+  id           String         @id @default(cuid())
+  businessId   String         @unique
+  clientId     String         @unique
+  isActive     Boolean        @default(false)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  business     Business       @relation(fields: [businessId], references: [id])
+  client       User           @relation(fields: [clientId], references: [id])
+  IntakeAnswer IntakeAnswer[]
+  metrics      Metric[]
+  toolAccess   ToolAccess[]
+}
+
+model Metric {
+  id                String        @id @default(cuid())
+  name              String
+  description       String?
+  type              MetricType
+  businessId        String
+  clientPortalId    String?
+  value             String?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  isClientRequested Boolean       @default(false)
+  target            String?
+  benchmark         String?
+  business          Business      @relation(fields: [businessId], references: [id])
+  clientPortal      ClientPortal? @relation(fields: [clientPortalId], references: [id])
+}
+
+model Tool {
+  id          String       @id @default(cuid())
+  name        String
+  description String?
+  businessId  String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  isRequested Boolean      @default(false)
+  status      ToolStatus   @default(PENDING)
+  business    Business     @relation(fields: [businessId], references: [id])
+  toolAccess  ToolAccess[]
+
+  @@unique([businessId, name])
+}
+
+model ToolAccess {
+  id             String       @id @default(cuid())
+  toolId         String
+  clientPortalId String
+  isGranted      Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  clientPortal   ClientPortal @relation(fields: [clientPortalId], references: [id])
+  tool           Tool         @relation(fields: [toolId], references: [id])
+
+  @@unique([toolId, clientPortalId])
+}
+
+model Opportunity {
+  id           String            @id @default(cuid())
+  title        String
+  description  String?
+  status       OpportunityStatus @default(OPEN)
+  businessId   String
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  category     String
+  serviceArea  String
+  targetKPI    String?
+  isPublished  Boolean           @default(false)
+  business     Business          @relation(fields: [businessId], references: [id])
+}
+
+model Scorecard {
+  id            String   @id @default(cuid())
+  businessId    String
+  category      String
+  score         Int?
+  maxScore      Int?     @default(100)
+  highlights    Json?    @default("[]")
+  metricSignals Json?    @default("[]")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  isPublished   Boolean  @default(false)
+  business      Business @relation(fields: [businessId], references: [id])
+}
+
+model ToolConfiguration {
+  id            String   @id @default(cuid())
+  userId        String
+  toolName      String
+  configuration Json
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  user          User     @relation(fields: [userId], references: [id])
+
+  @@unique([userId, toolName])
+}
+
+model IntakeAnswer {
+  id             String         @id @default(cuid())
+  answer         String
+  questionId     String
+  clientPortalId String
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  clientPortal   ClientPortal   @relation(fields: [clientPortalId], references: [id])
+  question       IntakeQuestion @relation(fields: [questionId], references: [id])
+
+  @@unique([questionId, clientPortalId])
+}
+
+model IntakeQuestion {
+  id         String         @id @default(cuid())
+  question   String
+  type       QuestionType
+  options    String[]       @default([])
+  isActive   Boolean        @default(true)
+  order      Int            @default(0)
+  businessId String
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+  area       String         @default("Other")
+  answers    IntakeAnswer[]
+  business   Business       @relation(fields: [businessId], references: [id])
+}
+
+model Goal {
+  id          String     @id @default(cuid())
+  name        String
+  description String?
+  status      GoalStatus @default(IN_PROGRESS)
+  targetDate  DateTime?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  businessId  String
+  business    Business   @relation(fields: [businessId], references: [id])
+}
+
+model KPI {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  target      String?
+  current     String?
+  unit        String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  businessId  String
+  business    Business @relation(fields: [businessId], references: [id])
+}
+
+model AIConfiguration {
+  id        String   @id @default(cuid())
+  provider  String   @default("OpenAI")
+  apiKey    String
+  model     String   @default("gpt-4")
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum UserRole {
+  ADMIN
+  CLIENT
+}
+
+enum MetricType {
+  TEXT
+  NUMBER
+  BOOLEAN
+  SELECT
+}
+
+enum OpportunityStatus {
+  OPEN
+  IN_PROGRESS
+  COMPLETED
+  CLOSED
+}
+
+enum ToolStatus {
+  PENDING
+  GRANTED
+  DENIED
+}
+
+enum QuestionType {
+  TEXT
+  NUMBER
+  BOOLEAN
+  SELECT
+}
+
+enum GoalStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+  ON_HOLD
+} 

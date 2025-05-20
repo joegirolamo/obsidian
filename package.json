@@ -6,7 +6,10 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "cd apps/connect && npm run build",
+    "build": "npm run build:packages && npm run build:prisma && npm run build:connect",
+    "build:packages": "turbo run build --filter=@obsidian/types --filter=@obsidian/ui --filter=@obsidian/utils",
+    "build:prisma": "cd apps/connect && npx prisma generate",
+    "build:connect": "cd apps/connect && npm run build",
     "dev": "cd apps/connect && npm run dev",
     "dev:port": "cd apps/connect && next dev -p",
     "lint": "cd apps/connect && npm run lint",

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Sparkles } from "lucide-react";
 import { createOpportunity, deleteOpportunity, publishOpportunities, unpublishOpportunities, getOpportunitiesPublishStatus } from '@/app/actions/opportunity';
 import PublishToggle from '@/components/PublishToggle';
 
@@ -13,6 +13,7 @@ interface OpportunityForm {
 
 interface OpportunityData extends OpportunityForm {
   id: string;
+  category?: string;
 }
 
 export default function OpportunitiesPage() {
@@ -26,14 +27,16 @@ export default function OpportunitiesPage() {
 
   const [isPublished, setIsPublished] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [generatingCategory, setGeneratingCategory] = useState<string | null>(null);
   const [opportunities, setOpportunities] = useState<Record<string, OpportunityData[]>>({
     EBITDA: [],
     Revenue: [],
     'De-Risk': [],
   });
   const [forms, setForms] = useState<Record<string, OpportunityForm>>({});
+  const [error, setError] = useState<string | null>(null);
 
-  // Load initial publish status
+  // Load initial publish status and opportunities
   useEffect(() => {
     const loadPublishStatus = async () => {
       const result = await getOpportunitiesPublishStatus(businessId);
@@ -42,7 +45,36 @@ export default function OpportunitiesPage() {
       }
     };
 
+    const loadOpportunities = async () => {
+      try {
+        const response = await fetch(`/api/business/${businessId}/opportunities`);
+        const data = await response.json();
+        
+        if (data.success) {
+          // Group opportunities by category
+          const groupedOpportunities: Record<string, OpportunityData[]> = {
+            EBITDA: [],
+            Revenue: [],
+            'De-Risk': [],
+          };
+          
+          // Sort opportunities into categories
+          data.opportunities.forEach((opp: any) => {
+            const category = opp.category || 'Other';
+            if (groupedOpportunities[category]) {
+              groupedOpportunities[category].push(opp);
+            }
+          });
+          
+          setOpportunities(groupedOpportunities);
+        }
+      } catch (err) {
+        console.error('Error loading opportunities:', err);
+      }
+    };
+
     loadPublishStatus();
+    loadOpportunities();
   }, [businessId]);
 
   const handlePublishToggle = async () => {
@@ -79,6 +111,7 @@ export default function OpportunitiesPage() {
     const result = await createOpportunity(businessId, {
       ...form,
       category,
+      serviceArea: "Other", // Default service area
     });
 
     if (result.success && result.opportunity) {
@@ -108,6 +141,47 @@ export default function OpportunitiesPage() {
     }
   };
 
+  const handleGenerateOpportunities = async (category: string) => {
+    setGeneratingCategory(category);
+    setError(null);
+    
+    try {
+      const response = await fetch('/api/admin/ai-opportunities', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          businessId,
+          category
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        // Add the newly generated opportunities to the state
+        const newOpportunities = data.opportunities.map((opp: any) => ({
+          id: opp.id,
+          title: opp.title,
+          description: opp.description || ''
+        }));
+        
+        setOpportunities((prev) => ({
+          ...prev,
+          [category]: [...(prev[category] || []), ...newOpportunities],
+        }));
+      } else {
+        setError(data.error || 'Failed to generate opportunities');
+      }
+    } catch (err) {
+      console.error('Error generating opportunities:', err);
+      setError('An error occurred while generating opportunities');
+    } finally {
+      setGeneratingCategory(null);
+    }
+  };
+
   return (
     <div>
       <div className="max-w-7xl mx-auto">
@@ -127,6 +201,12 @@ export default function OpportunitiesPage() {
           </div>
         </div>
 
+        {error && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700">
+            {error}
+          </div>
+        )}
+
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           {categories.map((category) => (
             <div
@@ -140,6 +220,25 @@ export default function OpportunitiesPage() {
               </div>
               <div className="px-4 py-5 sm:p-6">
                 <div className="space-y-6">
+                  {/* Generate button */}
+                  <button
+                    onClick={() => handleGenerateOpportunities(category)}
+                    className="button button-secondary w-full flex items-center justify-center"
+                    disabled={generatingCategory === category}
+                  >
+                    {generatingCategory === category ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900 mr-2"></div>
+                        Generating...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="h-4 w-4 mr-2" />
+                        Generate with AI
+                      </>
+                    )}
+                  </button>
+
                   {/* Add new opportunity form */}
                   <div className="space-y-4">
                     <input
