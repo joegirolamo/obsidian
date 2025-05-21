@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npm install --no-audit --no-fund && npm run vercel-build",
+  "buildCommand": "cd apps/connect && npm install --no-audit --no-fund && npm run vercel-build",
   "outputDirectory": "apps/connect/.next",
   "devCommand": "cd apps/connect && npx next dev",
   "git": {
