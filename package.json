@@ -22,8 +22,8 @@
     "format": "prettier --write \"**/*.{ts,tsx,md}\""
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4.1.7",
     "prettier": "^3.0.0",
+    "tailwindcss": "^3.3.0",
     "turbo": "^2.4.4"
   },
   "packageManager": "npm@10.2.4",
