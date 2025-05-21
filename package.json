@@ -13,6 +13,7 @@
     "build:ui": "cd packages/ui && npm run build",
     "build:prisma": "cd apps/connect && npx prisma generate",
     "build:connect": "cd apps/connect && npm run build",
+    "vercel-build": "node build.js",
     "dev": "cd apps/connect && npm run dev",
     "dev:port": "cd apps/connect && next dev -p",
     "lint": "cd apps/connect && npm run lint",
