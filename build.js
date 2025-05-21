@@ -65,6 +65,14 @@ async function build() {
     process.exit(1);
   }
   
+  // Install specific Tailwind CSS dependencies
+  console.log('\n> Installing Tailwind CSS dependencies in connect app...');
+  const tailwindInstallResult = runCommand('npm install -D tailwindcss@3.3.0 autoprefixer@10.4.16 postcss@8.4.32 @tailwindcss/forms@0.5.7', path.join(rootDir, 'apps/connect'));
+  if (!tailwindInstallResult.success) {
+    console.error('Failed to install Tailwind CSS dependencies in connect app');
+    process.exit(1);
+  }
+  
   // Generate Prisma client
   console.log('\n> Generating Prisma client...');
   const prismaResult = runCommand('npx prisma generate', path.join(rootDir, 'apps/connect'));
