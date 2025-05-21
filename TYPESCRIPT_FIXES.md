@@ -25,6 +25,12 @@ This document summarizes the fixes made to address TypeScript errors that were p
    - Updated vercel.json with a more robust build command
    - Set up Next.js config to temporarily ignore remaining TypeScript errors
 
+6. **TailwindCSS Configuration**
+   - Fixed PostCSS configuration to use proper plugins
+   - Updated TailwindCSS and related packages to versions compatible with Next.js 15
+   - Removed non-existent `@tailwindcss/postcss` dependency
+   - Added proper configuration files in the connect app
+
 ## Next Steps
 
 While we've made significant progress, there are still some TypeScript errors that need to be addressed:

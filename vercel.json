@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npm install --no-audit --no-fund && npm run build",
+  "buildCommand": "npm install --no-audit --no-fund && npm run build:packages && cd apps/connect && npm install --no-audit --no-fund && npx prisma generate && npm run build",
   "outputDirectory": "apps/connect/.next",
   "devCommand": "cd apps/connect && npx next dev",
   "git": {
