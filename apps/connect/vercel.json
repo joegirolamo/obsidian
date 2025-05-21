@@ -1,0 +1,10 @@
+{
+  "buildCommand": "npm install && npx prisma generate && npm run build",
+  "outputDirectory": ".next",
+  "framework": "nextjs",
+  "git": {
+    "deploymentEnabled": {
+      "main": true
+    }
+  }
+} 

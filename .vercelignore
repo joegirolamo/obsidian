@@ -1,13 +1,9 @@
 # Local development files
 .turbo
 node_modules
-.next
-.env*.local
 
-# Build artifacts
-dist
-build
-out
+# Local env files
+.env*.local
 
 # Logs
 npm-debug.log*

@@ -1,9 +1,13 @@
 {
-  "buildCommand": "chmod +x vercel-build.sh && ./vercel-build.sh",
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/apps/connect/$1" }
+  ],
+  "buildCommand": "chmod +x build.sh && ./build.sh",
+  "outputDirectory": "apps/connect/.next",
+  "framework": "nextjs",
   "git": {
     "deploymentEnabled": {
       "main": true
     }
-  },
-  "framework": "nextjs"
+  }
 } 

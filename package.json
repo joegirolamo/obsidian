@@ -14,6 +14,8 @@
     "build:prisma": "cd apps/connect && npx prisma generate",
     "build:connect": "cd apps/connect && npm run build",
     "vercel-build": "node build.js",
+    "copy-vercel-config": "node copy-vercel-config.js",
+    "deploy": "npm run copy-vercel-config && vercel",
     "dev": "cd apps/connect && npm run dev",
     "dev:port": "cd apps/connect && next dev -p",
     "lint": "cd apps/connect && npm run lint",
