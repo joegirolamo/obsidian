@@ -16,6 +16,9 @@
 # next.js
 /.next/
 /out/
+# Also ignore .next in all apps and packages
+**/apps/**/.next/
+**/packages/**/.next/
 
 # production
 /build

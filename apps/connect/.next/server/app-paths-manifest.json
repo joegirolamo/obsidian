@@ -1,7 +1,0 @@
-{
-  "/_not-found/page": "app/_not-found/page.js",
-  "/favicon.ico/route": "app/favicon.ico/route.js",
-  "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js",
-  "/portal/[businessId]/dashboard/page": "app/portal/[businessId]/dashboard/page.js",
-  "/admin/dvcp/opportunities/page": "app/admin/dvcp/opportunities/page.js"
-}
