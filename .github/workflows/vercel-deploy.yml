@@ -31,6 +31,7 @@ jobs:
         run: |
           cd apps/connect
           npm install
+          npm install tailwindcss autoprefixer postcss @tailwindcss/forms
           npx prisma generate
           npm run build
 
