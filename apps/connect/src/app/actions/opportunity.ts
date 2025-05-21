@@ -1,4 +1,3 @@
-// @ts-nocheck
 'use server'
 
 import { prisma } from "@/lib/prisma";
@@ -18,7 +17,6 @@ export async function createOpportunity(
   }
 ) {
   try {
-    // @ts-ignore - Ignoring TypeScript checking for serviceArea field
     const opportunity = await prisma.opportunity.create({
       data: {
         businessId,
@@ -207,8 +205,7 @@ export async function generateOpportunitiesWithAI(businessId: string, category: 
     }
 
     // Get AI configuration
-    // @ts-ignore - Using any type for AIConfiguration
-    const aiConfig = await (prisma as any).aIConfiguration.findFirst({
+    const aiConfig = await prisma.aIConfiguration.findFirst({
       where: { isActive: true }
     });
 
@@ -216,17 +213,15 @@ export async function generateOpportunitiesWithAI(businessId: string, category: 
       throw new Error('No active AI configuration found');
     }
 
-    // Get business data with its relationships directly using any typing
-    // @ts-ignore - Using any type to bypass TypeScript checking
+    // Get business data with its relationships
     const business = await prisma.business.findUnique({
       where: { id: businessId },
-      // @ts-ignore - Ignoring TypeScript checking for include field
       include: {
         goals: true,
         kpis: true,
         metrics: true
       }
-    }) as any;
+    });
 
     if (!business) {
       throw new Error('Business not found');
@@ -239,11 +234,8 @@ export async function generateOpportunitiesWithAI(businessId: string, category: 
         industry: business.industry || 'Not specified',
         description: business.description || 'Not provided',
       },
-      // @ts-ignore - Ignoring TypeScript checking for goals property
       goals: business.goals || [],
-      // @ts-ignore - Ignoring TypeScript checking for kpis property
       kpis: business.kpis || [],
-      // @ts-ignore - Ignoring TypeScript checking for metrics property
       metrics: business.metrics || []
     };
 

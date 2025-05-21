@@ -2,13 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import { PlusCircle, Lightbulb, Sparkles, X, AlertTriangle, Award, Loader2, Pencil } from 'lucide-react';
-import Button from '../../../../packages/ui/src/components/Button';
-import Toggle from '../../../../components/shared/Toggle';
+import { Button } from '@/components';
+import Toggle from '@/components/shared/Toggle';
 import { useSearchParams } from 'next/navigation';
 import { publishOpportunities, unpublishOpportunities, getOpportunitiesPublishStatus, getBusinessOpportunities, createOpportunity, deleteOpportunity, generateOpportunitiesWithAI, updateOpportunityStatus, updateOpportunity } from '@/app/actions/opportunity';
 import { getBusinessGoalsAction, getBusinessKPIsAction } from '@/app/actions/serverActions';
 import { OpportunityStatus } from '@prisma/client';
-import ClientTruncatedText from '@/components/ClientTruncatedText';
+import { ClientTruncatedText } from '@/components';
 
 // Define the sparkle gradient icon as a custom component
 const SparkleGradientIcon = ({className}: {className?: string}) => (
@@ -137,8 +137,8 @@ export default function OpportunitiesPage() {
         ]);
         
         const goalsList = [
-          ...(goalsResult.success ? goalsResult.goals.map(g => g.name) : []),
-          ...(kpisResult.success ? kpisResult.kpis.map(k => k.name) : [])
+          ...(goalsResult.success && goalsResult.goals ? goalsResult.goals.map(g => g.name) : []),
+          ...(kpisResult.success && kpisResult.kpis ? kpisResult.kpis.map(k => k.name) : [])
         ];
         setGoals(goalsList);
         

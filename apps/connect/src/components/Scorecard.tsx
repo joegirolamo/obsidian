@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { PlusCircle, BarChart2, AlertCircle, Zap, ChevronUp, ChevronDown, X, Loader2, Pencil } from 'lucide-react';
-import Button from '../packages/ui/src/components/Button';
+import { Button } from '@/components';
 import Toggle from './shared/Toggle';
 import { 
   publishScorecard, 
