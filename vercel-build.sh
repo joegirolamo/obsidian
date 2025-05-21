@@ -97,9 +97,25 @@ npm run build
 echo "=== Build process completed ==="
 echo "Output directory: $OUTPUT_DIR"
 
-# Update Vercel configuration if needed
+# Create a symbolic link to the .next directory in the root if it's not already there
+if [ "$NEXT_APP_DIR" != "." ] && [ -d ".next" ]; then
+  echo "Creating a symbolic link to .next directory in the root"
+  cd "$(dirname "$NEXT_APP_DIR")" || exit 1
+  # Remove existing .next directory in the root if it exists
+  rm -rf .next
+  # Create the symbolic link
+  ln -s "$NEXT_APP_DIR/.next" .next
+  echo "Symbolic link created: .next -> $NEXT_APP_DIR/.next"
+fi
+
+# Copy the .next directory to the root as a fallback
 if [ "$NEXT_APP_DIR" != "." ]; then
-  echo "Note: Please ensure vercel.json has outputDirectory set to: $OUTPUT_DIR"
+  echo "Copying .next directory to root as a fallback"
+  ROOT_DIR=$(pwd | sed 's/\/apps\/connect//')
+  cd "$ROOT_DIR" || exit 1
+  rm -rf .next
+  cp -r "$NEXT_APP_DIR/.next" .
+  echo "Copied .next directory to root"
 fi
 
 exit 0 
