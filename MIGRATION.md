@@ -49,3 +49,22 @@ The `@/` alias still maps to the `src/` directory, so most imports should work w
 1. Continue to refine component organization as the application grows
 2. Create a more structured approach to shared UI components
 3. Consider implementing a component library for common UI elements 
+
+## Structure Cleanup (May 2024)
+
+We recently performed a structural cleanup of the codebase:
+
+1. **Removed deprecated `/src` directory**
+   - All code from the root `/src` directory has been migrated to `/apps/connect/src`
+   - A backup of the original `/src` directory is preserved in `/src_backup`
+   - The path mapping in tsconfig.json has been updated to reflect this change
+
+2. **Simplified deployment configuration**
+   - Removed unnecessary rewrites from vercel.json
+   - Updated build scripts to focus on the single app architecture
+
+3. **Clarified documentation**
+   - Updated README.md to accurately reflect the current project structure
+   - Added this section to MIGRATION.md to track the changes
+
+All development should now happen in the `/apps/connect` directory structure to maintain consistency 

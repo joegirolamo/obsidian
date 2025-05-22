@@ -70,6 +70,17 @@ export async function updateOpportunity(
 
 export async function deleteOpportunity(opportunityId: string) {
   try {
+    // First check if the opportunity exists
+    const opportunity = await prisma.opportunity.findUnique({
+      where: { id: opportunityId },
+    });
+    
+    if (!opportunity) {
+      console.error(`Opportunity with ID ${opportunityId} not found`);
+      return { success: false, error: 'Opportunity not found' };
+    }
+    
+    // Delete the opportunity
     await prisma.opportunity.delete({
       where: { id: opportunityId },
     });

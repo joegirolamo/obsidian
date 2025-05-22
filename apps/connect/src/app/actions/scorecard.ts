@@ -385,14 +385,19 @@ export async function initializeScorecards(businessId: string) {
     const categories = ['Foundation', 'Acquisition', 'Conversion', 'Retention'];
     
     const results = await Promise.all(categories.map(async (category) => {
+      // Generate a unique ID for the new scorecard
+      const id = `scorecard_${businessId}_${category}_${Date.now()}`;
+      
       // Create empty scorecard
       return (prisma as any).scorecard.create({
         data: {
+          id,
           businessId,
           category,
           score: 0,
           maxScore: 100,
           isPublished: false,
+          updatedAt: new Date(),
           highlights: { 
             items: [],
             metricSignals: [],
@@ -431,15 +436,20 @@ export async function updateScorecardScore(businessId: string, category: string,
     if (!existingScorecard) {
       console.log('[DEBUG] No scorecard found for quick score update. Creating new one.');
       
+      // Generate a unique ID for the new scorecard
+      const id = `scorecard_${businessId}_${category}_${Date.now()}`;
+      
       // Create a new scorecard with just the score
       await (prisma as any).scorecard.create({
         data: {
+          id,
           businessId,
           category,
           score,
           maxScore: 100,
           highlights: { items: [] },
-          isPublished: false
+          isPublished: false,
+          updatedAt: new Date(),
         }
       });
       

@@ -315,6 +315,14 @@ export default function OpportunitiesPage() {
       if (result.success) {
         // Update raw opportunities
         setRawOpportunities(prev => prev.filter(opp => opp.id !== opportunityId));
+        
+        // Also update the buckets state directly to ensure UI is immediately updated
+        setBuckets(prev => {
+          return prev.map(bucket => ({
+            ...bucket,
+            opportunities: bucket.opportunities.filter(opp => opp.id !== opportunityId)
+          }));
+        });
       } else {
         setError('Failed to delete opportunity');
       }

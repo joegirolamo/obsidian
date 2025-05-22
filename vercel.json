@@ -1,7 +1,4 @@
 {
-  "rewrites": [
-    { "source": "/(.*)", "destination": "/apps/connect/$1" }
-  ],
   "framework": "nextjs",
   "buildCommand": "chmod +x build.sh && ./build.sh",
   "outputDirectory": "apps/connect/.next"

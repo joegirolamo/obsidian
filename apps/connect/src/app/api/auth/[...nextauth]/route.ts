@@ -87,7 +87,8 @@ const handler = NextAuth({
   pages: {
     signIn: '/auth/signin',
   },
-  debug: true,
+  debug: process.env.NODE_ENV === 'development',
+  secret: process.env.NEXTAUTH_SECRET || 'THIS_IS_A_FALLBACK_SECRET_CHANGE_IT_IN_PRODUCTION',
 });
 
 export { handler as GET, handler as POST }; 

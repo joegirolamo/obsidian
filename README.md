@@ -14,10 +14,11 @@ This project is set up as a monorepo with the following structure:
 │   ├── ui/             # UI components
 │   ├── types/          # Type definitions
 │   └── utils/          # Utilities
+├── src_backup/         # Backup of the deprecated src directory
 └── package.json        # Root package.json
 ```
 
-> **Important**: All development should happen in the `/apps/connect` directory. The root `/src` directory is deprecated and kept only for reference.
+> **Important**: All development should happen in the `/apps/connect` directory. The root `/src` directory is deprecated and will be removed. A backup is preserved in `/src_backup`.
 
 ## Getting Started
 
