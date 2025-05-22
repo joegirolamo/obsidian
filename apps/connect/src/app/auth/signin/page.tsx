@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { signIn } from 'next-auth/react';
+import { useState, useEffect } from 'react';
+import { signIn, getProviders } from 'next-auth/react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import ObsidianLogo from '@/components/ObsidianLogo';
@@ -12,6 +12,16 @@ export default function SignIn() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [debugInfo, setDebugInfo] = useState<any>(null);
+  const [providers, setProviders] = useState<any>(null);
+
+  useEffect(() => {
+    // Fetch available providers on component mount
+    getProviders().then(result => {
+      console.log('Available providers:', result);
+      setProviders(result);
+    });
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -117,7 +127,18 @@ export default function SignIn() {
           </div>
 
           <button
-            onClick={() => signIn('google', { callbackUrl: '/admin' })}
+            onClick={() => {
+              console.log('Google sign-in button clicked');
+              try {
+                // Using redirect true to force a full page redirect
+                signIn('google', { 
+                  callbackUrl: '/admin',
+                  redirect: true
+                });
+              } catch (error) {
+                console.error('Error calling signIn:', error);
+              }
+            }}
             className="w-full flex items-center justify-center gap-3 py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
           >
             <Image
@@ -129,6 +150,30 @@ export default function SignIn() {
             />
             Sign in with Google
           </button>
+
+          {/* Debug section */}
+          <div className="mt-8 pt-4 border-t border-gray-200">
+            <button
+              type="button"
+              onClick={() => {
+                console.log('Checking NextAuth state');
+                setDebugInfo({
+                  providers: providers,
+                  googleProvider: providers?.google,
+                  timestamp: new Date().toISOString()
+                });
+              }}
+              className="text-xs text-gray-500 hover:text-gray-700"
+            >
+              Check Auth Status
+            </button>
+            
+            {debugInfo && (
+              <div className="mt-2 p-2 bg-gray-100 rounded text-xs overflow-auto max-h-40">
+                <pre>{JSON.stringify(debugInfo, null, 2)}</pre>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
