@@ -3,6 +3,17 @@
 echo "=== Starting Build Process ==="
 echo "Current directory: $(pwd)"
 
+# Ensure NextAuth environment variables are set
+echo "=== Checking environment variables ==="
+if [ -z "$NEXTAUTH_SECRET" ]; then
+  echo "WARNING: NEXTAUTH_SECRET environment variable is missing"
+  echo "You may need to set this for authentication to work properly"
+fi
+
+if [ -z "$NEXTAUTH_URL" ]; then
+  echo "WARNING: NEXTAUTH_URL environment variable is missing"
+fi
+
 # Build packages
 echo "Building packages..."
 if [ -d "packages/types" ]; then

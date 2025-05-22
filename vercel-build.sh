@@ -5,6 +5,18 @@ echo "Current directory: $(pwd)"
 echo "Listing files and directories:"
 ls -la
 
+# Ensure NextAuth environment variables are set
+echo "=== Checking environment variables ==="
+if [ -z "$NEXTAUTH_SECRET" ]; then
+  echo "ERROR: NEXTAUTH_SECRET environment variable is missing"
+  echo "Please set this in the Vercel project settings"
+fi
+
+if [ -z "$NEXTAUTH_URL" ]; then
+  echo "ERROR: NEXTAUTH_URL environment variable is missing"
+  echo "Please set this in the Vercel project settings"
+fi
+
 # Find the Next.js application - check current dir first, then common locations
 if [ -f "next.config.js" ]; then
   echo "Found Next.js app in current directory"

@@ -14,22 +14,18 @@ declare module "next-auth" {
   }
 }
 
-// Generate a secure secret if one is not provided
-const generateSecureSecret = () => {
-  // In a real production environment, this would be a secure random string
-  // For our purposes, we'll use a fixed string that's more secure than the fallback
-  return "Xx05jLXT1wNTxkr9LXBb8KTi22AQmSgNlc7dWc3V85M=";
-};
+// Debug environment variables
+console.log('===== AUTH CONFIGURATION DEBUG =====');
+console.log('NODE_ENV:', process.env.NODE_ENV);
+console.log('NEXTAUTH_URL exists:', !!process.env.NEXTAUTH_URL);
+console.log('NEXTAUTH_SECRET exists:', !!process.env.NEXTAUTH_SECRET);
+console.log('======================================');
 
-// Use environment variable if available, or generate a secure secret
-const NEXTAUTH_SECRET = process.env.NEXTAUTH_SECRET || generateSecureSecret();
-
-// Ensure we have a secret for NextAuth
-if (!NEXTAUTH_SECRET) {
-  throw new Error("Missing NEXTAUTH_SECRET environment variable");
+// Verify we have a secret
+if (!process.env.NEXTAUTH_SECRET) {
+  console.error("CRITICAL ERROR: NEXTAUTH_SECRET is missing");
+  throw new Error("NEXTAUTH_SECRET environment variable is required for production. Please add it to your environment variables.");
 }
-
-console.log("NextAuth is using a proper secret:", !!NEXTAUTH_SECRET);
 
 const handler = NextAuth({
   adapter: PrismaAdapter(prisma),
@@ -105,7 +101,7 @@ const handler = NextAuth({
     signIn: '/auth/signin',
   },
   debug: process.env.NODE_ENV === 'development',
-  secret: NEXTAUTH_SECRET,
+  secret: process.env.NEXTAUTH_SECRET,
 });
 
 export { handler as GET, handler as POST }; 

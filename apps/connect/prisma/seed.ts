@@ -4,30 +4,41 @@ import bcrypt from 'bcryptjs';
 const prisma = new PrismaClient();
 
 async function main() {
-  // Delete existing test user if it exists
-  await prisma.user.deleteMany({
-    where: {
-      email: 'admin@vokal.io',
-    },
+  console.log('Seeding database...');
+
+  // Create admin user
+  const adminEmail = 'admin@vokal.io';
+  const existingAdmin = await prisma.user.findUnique({
+    where: { email: adminEmail },
   });
 
-  // Create the admin user
-  const hashedPassword = await bcrypt.hash('password123', 10);
-  const admin = await prisma.user.create({
-    data: {
-      name: 'Admin User',
-      email: 'admin@vokal.io',
-      password: hashedPassword,
-      role: 'ADMIN',
-    },
-  });
-
-  console.log(`Created admin user: ${admin.email}`);
+  if (!existingAdmin) {
+    console.log('Creating admin user...');
+    await prisma.user.create({
+      data: {
+        email: adminEmail,
+        name: 'Admin',
+        password: await bcrypt.hash('password123', 10),
+        role: 'ADMIN',
+      },
+    });
+    console.log('Admin user created successfully');
+  } else {
+    console.log('Admin user already exists, updating password...');
+    await prisma.user.update({
+      where: { email: adminEmail },
+      data: {
+        password: await bcrypt.hash('password123', 10),
+        role: 'ADMIN',
+      },
+    });
+    console.log('Admin user updated successfully');
+  }
 }
 
 main()
   .catch((e) => {
-    console.error(e);
+    console.error('Error seeding database:', e);
     process.exit(1);
   })
   .finally(async () => {
