@@ -38,7 +38,7 @@ export default function NewWorkspacePage() {
       });
 
       if (result.success && result.business) {
-        router.push('/admin/business-profile');
+        router.push(`/admin/business-profile?businessId=${result.business.id}`);
       } else {
         setError(result.error || 'Failed to create workspace');
       }
@@ -107,11 +107,25 @@ export default function NewWorkspacePage() {
                 required
               >
                 <option value="">Select an industry</option>
-                <option value="Technology">Technology</option>
-                <option value="Retail">Retail</option>
-                <option value="Professional Services">Professional Services</option>
-                <option value="Healthcare">Healthcare</option>
+                <option value="Agriculture">Agriculture & Farming</option>
+                <option value="Automotive">Automotive</option>
+                <option value="Banking">Banking & Financial Services</option>
+                <option value="Construction">Construction & Real Estate</option>
+                <option value="Education">Education & Training</option>
+                <option value="Energy">Energy & Utilities</option>
+                <option value="Entertainment">Entertainment & Media</option>
+                <option value="Food">Food & Beverage</option>
+                <option value="Government">Government & Public Sector</option>
+                <option value="Healthcare">Healthcare & Pharmaceuticals</option>
+                <option value="Hospitality">Hospitality & Tourism</option>
+                <option value="Insurance">Insurance</option>
                 <option value="Manufacturing">Manufacturing</option>
+                <option value="Non-Profit">Non-Profit & NGO</option>
+                <option value="Professional">Professional Services</option>
+                <option value="Retail">Retail & E-commerce</option>
+                <option value="Technology">Technology & Software</option>
+                <option value="Telecommunications">Telecommunications</option>
+                <option value="Transportation">Transportation & Logistics</option>
                 <option value="Other">Other</option>
               </select>
             </div>
@@ -143,7 +157,7 @@ export default function NewWorkspacePage() {
             </div>
           </div>
 
-          <div className="card-footer flex justify-end gap-3">
+          <div className="card-footer flex justify-end gap-3 p-6">
             <button
               type="button"
               onClick={() => router.back()}

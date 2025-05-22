@@ -8,6 +8,7 @@ export default async function middleware(request: NextRequestWithAuth) {
   const isAdminPage = request.nextUrl.pathname.startsWith('/admin');
   const isConnectPage = request.nextUrl.pathname.startsWith('/connect');
   const isConnectApi = request.nextUrl.pathname.startsWith('/api/connect');
+  const isRootAdminPage = request.nextUrl.pathname === '/admin' || request.nextUrl.pathname === '/admin/'; 
 
   // Allow access to connect pages and API
   if (isConnectPage || isConnectApi) {
@@ -16,7 +17,15 @@ export default async function middleware(request: NextRequestWithAuth) {
 
   // Redirect to admin if authenticated user tries to access auth pages
   if (isAuthPage && token) {
-    return NextResponse.redirect(new URL('/admin', request.url));
+    return NextResponse.redirect(new URL('/admin/business-profile', request.url));
+  }
+
+  // Redirect root admin page to business profile
+  if (isRootAdminPage && token) {
+    // Create a URL that preserves existing query parameters
+    const url = new URL(request.url);
+    url.pathname = '/admin/business-profile';
+    return NextResponse.redirect(url);
   }
 
   // Redirect to login if unauthenticated user tries to access admin pages

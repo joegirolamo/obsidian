@@ -1021,10 +1021,19 @@ export default function Scorecard() {
                   <h2 className="text-xl font-semibold">{bucket.name}</h2>
                 </div>
                 <div className="flex items-center">
-                  <div className="flex items-center border border-gray-200 rounded overflow-hidden">
+                  <div style={{ border: '1px solid #eaeaea', display: 'flex', borderRadius: '0.25rem', overflow: 'hidden' }}>
                     <button 
-                      className="p-1 hover:bg-gray-100 border-r border-gray-200"
+                      style={{ 
+                        padding: '0.25rem', 
+                        borderRight: '1px solid #eaeaea', 
+                        backgroundColor: 'white', 
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}
                       onClick={() => decreaseScore(bucket.name)}
+                      className="hover:bg-gray-100"
                     >
                       <ChevronDown className="h-4 w-4 text-gray-500" />
                     </button>
@@ -1035,11 +1044,35 @@ export default function Scorecard() {
                       onBlur={() => handleScoreInputBlur(bucket.name)}
                       min="0"
                       max={bucket.data.maxScore}
-                      className="w-12 text-center py-1 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      style={{ 
+                        width: '3rem', 
+                        textAlign: 'center', 
+                        padding: '0.25rem 0', 
+                        border: 'none', 
+                        outline: 'none',
+                        boxShadow: 'none',
+                        WebkitAppearance: 'none',
+                        MozAppearance: 'textfield',
+                        appearance: 'textfield',
+                        margin: 0,
+                        display: 'block',
+                        fontSize: '14px',
+                        backgroundColor: 'transparent'
+                      }}
+                      className="hide-number-input-spinners"
                     />
                     <button 
-                      className="p-1 hover:bg-gray-100 border-l border-gray-200"
+                      style={{ 
+                        padding: '0.25rem', 
+                        borderLeft: '1px solid #eaeaea', 
+                        backgroundColor: 'white', 
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}
                       onClick={() => increaseScore(bucket.name)}
+                      className="hover:bg-gray-100"
                     >
                       <ChevronUp className="h-4 w-4 text-gray-500" />
                     </button>

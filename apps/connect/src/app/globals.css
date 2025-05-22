@@ -19,3 +19,26 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }
+
+/* Hide spinner buttons from number inputs */
+.hide-number-input-spinners::-webkit-inner-spin-button,
+.hide-number-input-spinners::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.hide-number-input-spinners {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+/* Remove default focus styles for inputs */
+input:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+/* Ensure number inputs don't have a dark border in Safari */
+input[type="number"] {
+  border-color: inherit;
+}

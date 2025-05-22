@@ -112,13 +112,6 @@ export default function AdminNav() {
   const getNavItems = () => {
     const items = [
       {
-        label: 'OVERVIEW',
-        href: '/admin',
-        subItems: [
-          { label: 'Dashboard', href: '/admin', icon: BarChart2 }
-        ]
-      },
-      {
         label: 'BUSINESS',
         href: '/admin/business-profile',
         subItems: [
@@ -144,7 +137,7 @@ export default function AdminNav() {
         ]
       },
       {
-        label: 'AI',
+        label: 'AI SETUP',
         href: '/admin/ai-brain',
         subItems: [
           { label: 'AI Brain', href: '/admin/ai-brain', icon: Brain }

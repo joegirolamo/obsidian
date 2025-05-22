@@ -102,7 +102,7 @@ export default function EditBusinessModal({
                   type="text"
                   id="name"
                   className="form-input"
-                  value={formData.name}
+                  value={(formData as BusinessDetails).name}
                   onChange={(e) => setFormData({ ...formData as BusinessDetails, name: e.target.value })}
                   placeholder="Enter business name"
                 />
@@ -111,14 +111,34 @@ export default function EditBusinessModal({
                 <label className="form-label" htmlFor="industry">
                   Industry
                 </label>
-                <input
-                  type="text"
+                <select
                   id="industry"
                   className="form-input"
                   value={(formData as BusinessDetails).industry}
                   onChange={(e) => setFormData({ ...formData as BusinessDetails, industry: e.target.value })}
-                  placeholder="Enter industry"
-                />
+                >
+                  <option value="">Select an industry</option>
+                  <option value="Agriculture">Agriculture & Farming</option>
+                  <option value="Automotive">Automotive</option>
+                  <option value="Banking">Banking & Financial Services</option>
+                  <option value="Construction">Construction & Real Estate</option>
+                  <option value="Education">Education & Training</option>
+                  <option value="Energy">Energy & Utilities</option>
+                  <option value="Entertainment">Entertainment & Media</option>
+                  <option value="Food">Food & Beverage</option>
+                  <option value="Government">Government & Public Sector</option>
+                  <option value="Healthcare">Healthcare & Pharmaceuticals</option>
+                  <option value="Hospitality">Hospitality & Tourism</option>
+                  <option value="Insurance">Insurance</option>
+                  <option value="Manufacturing">Manufacturing</option>
+                  <option value="Non-Profit">Non-Profit & NGO</option>
+                  <option value="Professional">Professional Services</option>
+                  <option value="Retail">Retail & E-commerce</option>
+                  <option value="Technology">Technology & Software</option>
+                  <option value="Telecommunications">Telecommunications</option>
+                  <option value="Transportation">Transportation & Logistics</option>
+                  <option value="Other">Other</option>
+                </select>
               </div>
               <div className="form-group">
                 <label className="form-label" htmlFor="website">
