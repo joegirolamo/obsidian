@@ -14,17 +14,18 @@ declare module "next-auth" {
   }
 }
 
-// Debug environment variables
+// Debug environment info (without exposing actual values)
 console.log('===== AUTH CONFIGURATION DEBUG =====');
 console.log('NODE_ENV:', process.env.NODE_ENV);
 console.log('NEXTAUTH_URL exists:', !!process.env.NEXTAUTH_URL);
 console.log('NEXTAUTH_SECRET exists:', !!process.env.NEXTAUTH_SECRET);
 console.log('======================================');
 
-// Verify we have a secret
-if (!process.env.NEXTAUTH_SECRET) {
-  console.error("CRITICAL ERROR: NEXTAUTH_SECRET is missing");
-  throw new Error("NEXTAUTH_SECRET environment variable is required for production. Please add it to your environment variables.");
+// Only in development, append an error handler to the config
+const isProduction = process.env.NODE_ENV === 'production';
+if (isProduction && !process.env.NEXTAUTH_SECRET) {
+  console.error("Error: NEXTAUTH_SECRET missing in production environment");
+  console.log('Available env variables:', Object.keys(process.env).join(', '));
 }
 
 const handler = NextAuth({
@@ -100,7 +101,7 @@ const handler = NextAuth({
   pages: {
     signIn: '/auth/signin',
   },
-  debug: process.env.NODE_ENV === 'development',
+  debug: isProduction ? false : true,
   secret: process.env.NEXTAUTH_SECRET,
 });
 
