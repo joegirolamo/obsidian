@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import ObsidianLogo from '@/components/ObsidianLogo';
 
-export default function AuthError() {
+// Separate component to use search params
+function ErrorContent() {
   const searchParams = useSearchParams();
   const [error, setError] = useState<string>('');
   const [errorDetail, setErrorDetail] = useState<string>('');
@@ -34,6 +35,34 @@ export default function AuthError() {
   }, [searchParams]);
 
   return (
+    <div className="text-center mb-6">
+      <h2 className="text-xl font-semibold text-red-600">{error}</h2>
+      <p className="mt-2 text-gray-600">{errorDetail}</p>
+      
+      <div className="mt-6 text-center">
+        <details className="text-xs text-gray-500 cursor-pointer">
+          <summary>Technical Details</summary>
+          <div className="mt-2 p-2 bg-gray-100 rounded overflow-auto max-h-40 text-left">
+            <pre>{searchParams.get('error')}</pre>
+          </div>
+        </details>
+      </div>
+    </div>
+  );
+}
+
+// Loading fallback component
+function ErrorLoading() {
+  return (
+    <div className="text-center mb-6">
+      <h2 className="text-xl font-semibold text-gray-600">Loading...</h2>
+      <p className="mt-2 text-gray-500">Please wait while we process your request.</p>
+    </div>
+  );
+}
+
+export default function AuthError() {
+  return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gray-50">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
@@ -44,10 +73,9 @@ export default function AuthError() {
         </div>
 
         <div className="bg-white p-8 rounded-lg shadow-md">
-          <div className="text-center mb-6">
-            <h2 className="text-xl font-semibold text-red-600">{error}</h2>
-            <p className="mt-2 text-gray-600">{errorDetail}</p>
-          </div>
+          <Suspense fallback={<ErrorLoading />}>
+            <ErrorContent />
+          </Suspense>
 
           <div className="mt-8 text-center">
             <Link 
@@ -56,15 +84,6 @@ export default function AuthError() {
             >
               Return to Sign In
             </Link>
-          </div>
-          
-          <div className="mt-6 text-center">
-            <details className="text-xs text-gray-500 cursor-pointer">
-              <summary>Technical Details</summary>
-              <div className="mt-2 p-2 bg-gray-100 rounded overflow-auto max-h-40 text-left">
-                <pre>{searchParams.get('error')}</pre>
-              </div>
-            </details>
           </div>
         </div>
       </div>
