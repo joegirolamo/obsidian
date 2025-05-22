@@ -10,6 +10,10 @@ console.log('NextAuth Environment Variables:');
 console.log('NEXTAUTH_URL:', process.env.NEXTAUTH_URL);
 console.log('NEXTAUTH_SECRET:', process.env.NEXTAUTH_SECRET ? 'Set' : 'Not Set');
 
+// Ensure NEXTAUTH_URL doesn't have a trailing slash to prevent double slash issues
+const nextAuthUrl = process.env.NEXTAUTH_URL ? process.env.NEXTAUTH_URL.replace(/\/$/, '') : undefined;
+console.log('Normalized NEXTAUTH_URL:', nextAuthUrl);
+
 export const authOptions: AuthOptions = {
   adapter: PrismaAdapter(prisma),
   secret: process.env.NEXTAUTH_SECRET,
@@ -88,6 +92,19 @@ export const authOptions: AuthOptions = {
         session.user.role = token.role as string;
       }
       return session;
+    },
+  },
+  // Make sure the URL matches exactly what's configured in Google Cloud Console
+  useSecureCookies: process.env.NODE_ENV === 'production',
+  cookies: {
+    sessionToken: {
+      name: `next-auth.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+      },
     },
   },
   debug: process.env.NODE_ENV === 'development',

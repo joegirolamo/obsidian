@@ -15,9 +15,10 @@ const nextConfig = {
   transpilePackages: ['@obsidian/ui', '@obsidian/types', '@obsidian/utils'],
   
   // Explicitly expose the NEXTAUTH_SECRET as a server-side environment variable
+  // Remove trailing slash from NEXTAUTH_URL to prevent double-slash issues
   env: {
     NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
-    NEXTAUTH_URL: process.env.NEXTAUTH_URL,
+    NEXTAUTH_URL: process.env.NEXTAUTH_URL ? process.env.NEXTAUTH_URL.replace(/\/$/, '') : process.env.NEXTAUTH_URL,
   },
   
   // Log environment variables during build for debugging
@@ -27,6 +28,8 @@ const nextConfig = {
       console.log('NODE_ENV:', process.env.NODE_ENV);
       console.log('NEXTAUTH_SECRET exists:', !!process.env.NEXTAUTH_SECRET);
       console.log('NEXTAUTH_URL exists:', !!process.env.NEXTAUTH_URL);
+      console.log('NEXTAUTH_URL value:', process.env.NEXTAUTH_URL);
+      console.log('Normalized NEXTAUTH_URL:', process.env.NEXTAUTH_URL ? process.env.NEXTAUTH_URL.replace(/\/$/, '') : 'not available');
       console.log('VERCEL_ENV:', process.env.VERCEL_ENV);
       console.log('======================================\n');
     }

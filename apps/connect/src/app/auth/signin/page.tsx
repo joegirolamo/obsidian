@@ -12,7 +12,6 @@ export default function SignIn() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [debugInfo, setDebugInfo] = useState<any>(null);
   const [providers, setProviders] = useState<any>(null);
 
   useEffect(() => {
@@ -150,30 +149,6 @@ export default function SignIn() {
             />
             Sign in with Google
           </button>
-
-          {/* Debug section */}
-          <div className="mt-8 pt-4 border-t border-gray-200">
-            <button
-              type="button"
-              onClick={() => {
-                console.log('Checking NextAuth state');
-                setDebugInfo({
-                  providers: providers,
-                  googleProvider: providers?.google,
-                  timestamp: new Date().toISOString()
-                });
-              }}
-              className="text-xs text-gray-500 hover:text-gray-700"
-            >
-              Check Auth Status
-            </button>
-            
-            {debugInfo && (
-              <div className="mt-2 p-2 bg-gray-100 rounded text-xs overflow-auto max-h-40">
-                <pre>{JSON.stringify(debugInfo, null, 2)}</pre>
-              </div>
-            )}
-          </div>
         </div>
       </div>
     </div>
