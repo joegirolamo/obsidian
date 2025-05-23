@@ -32,20 +32,37 @@ export default function PortalLayout({
 
     async function checkPublishStatus() {
       try {
-        const response = await fetch(`/api/portal/${businessId}/publish-status`);
-
-        if (!response.ok) {
-          throw new Error('Failed to check publish status');
-        }
-
-        const data = await response.json();
+        // Add retry logic with a maximum of 3 attempts
+        let attempts = 0;
+        const maxAttempts = 3;
+        let success = false;
         
-        // If either scorecard or opportunities are published, redirect to dashboard
-        if (data.publishedTypes?.scorecard || data.publishedTypes?.opportunities) {
-          router.replace(`/portal/${businessId}/dashboard`);
+        while (attempts < maxAttempts && !success) {
+          try {
+            attempts++;
+            const response = await fetch(`/api/portal/${businessId}/publish-status?businessId=${businessId}`);
+            
+            if (!response.ok) {
+              throw new Error(`Failed to check publish status: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            success = true;
+            
+            // If either scorecard or opportunities are published, redirect to dashboard
+            if (data.publishedTypes?.scorecard || data.publishedTypes?.opportunities) {
+              router.replace(`/portal/${businessId}/dashboard`);
+            }
+          } catch (retryError) {
+            console.error(`Attempt ${attempts} failed:`, retryError);
+            if (attempts >= maxAttempts) throw retryError;
+            // Wait before retrying (exponential backoff)
+            await new Promise(resolve => setTimeout(resolve, 1000 * attempts));
+          }
         }
       } catch (error) {
-        console.error('Error checking publish status:', error);
+        console.error('Error checking publish status after retries:', error);
+        // Don't throw the error to the user, just log it
       }
     }
 

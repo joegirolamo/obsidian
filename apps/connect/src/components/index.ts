@@ -6,6 +6,7 @@ export { default as Notification } from './Notification';
 export { default as ObsidianLogo } from './ObsidianLogo';
 export { default as ClientTruncatedText } from './ClientTruncatedText';
 export { default as ServerTruncatedText } from './ServerTruncatedText';
+export { default as EmptyState } from './EmptyState';
 
 // Admin Components
 export { default as AdminNav } from './AdminNav';

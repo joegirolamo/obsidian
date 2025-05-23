@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { NavigationButtons } from '../NavigationButtons';
 import Card from '@/components/Card';
+import EmptyState from '@/components/EmptyState';
 
 type QuestionType = 'TEXT' | 'NUMBER' | 'BOOLEAN' | 'SELECT';
 
@@ -162,6 +163,33 @@ export default function QuestionsPage() {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+  
+  // Check if there are no questions
+  const hasQuestions = Object.keys(questions).length > 0;
+  
+  if (!hasQuestions) {
+    return (
+      <div className="max-w-2xl mx-auto">
+        <EmptyState type="questions" message="No questions available at this time." />
+        <div className="mt-8 flex justify-between">
+          <button
+            type="button"
+            onClick={() => router.push(`/portal/${businessId}/tools`)}
+            className="px-4 py-2 text-sm font-medium rounded-md border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 cursor-pointer"
+          >
+            Back
+          </button>
+          <button
+            type="button"
+            onClick={() => router.push(`/portal/${businessId}/thank-you`)}
+            className="px-4 py-2 text-sm font-medium rounded-md border border-transparent text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            Continue
+          </button>
+        </div>
       </div>
     );
   }

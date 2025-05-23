@@ -174,7 +174,7 @@ const BusinessProfilePage = () => {
           <div>
             <h1 className="heading-1">Business Profile</h1>
             <p className="text-body mt-2">
-              Manage business information and tool connections
+              Create the foundational business profile to be used as the foundation for our AI "brain"
             </p>
           </div>
           <div className="flex items-center gap-2">

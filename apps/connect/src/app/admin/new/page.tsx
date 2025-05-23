@@ -60,7 +60,7 @@ export default function NewWorkspacePage() {
       <div className="mb-8">
         <h1 className="heading-1">Create New Workspace</h1>
         <p className="text-body mt-2">
-          Set up a new workspace for your business
+          Set up a new business workspace
         </p>
       </div>
 

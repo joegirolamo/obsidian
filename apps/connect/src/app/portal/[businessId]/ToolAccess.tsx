@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import EmptyState from "@/components/EmptyState";
 
 type Tool = {
   id: string;
@@ -147,13 +148,7 @@ export default function ToolAccess({ businessId, tools }: ToolAccessProps) {
 
   // Then check for no requested tools
   if (requestedTools.length === 0) {
-    return (
-      <div className="bg-white p-8 rounded-lg shadow-sm border border-gray-100">
-        <div className="text-center text-gray-500">
-          No tool access requests at this time.
-        </div>
-      </div>
-    );
+    return <EmptyState type="tools" message="No tool access requests are needed at this time." />;
   }
 
   // If no Leadsie URL but there are requested tools

@@ -25,6 +25,9 @@ export default function Properties({ properties, onAdd, onRemove }: PropertiesPr
         <div className="flex items-center justify-between">
           <h2 className="heading-2">Properties</h2>
         </div>
+        <p className="text-gray-600 text-sm mt-1">
+          Add all primary pages – these are what will be assessed during automated audits
+        </p>
       </div>
       <div className="card-body">
         <div className="space-y-4">
