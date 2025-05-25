@@ -82,8 +82,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized: Not an admin' }, { status: 403 });
     }
 
-    // Call the server action to generate opportunities
-    const result = await generateOpportunitiesWithAI(businessId, category);
+    // Call the server action to generate opportunities and pass the userId directly
+    const result = await generateOpportunitiesWithAI(businessId, category, userId);
     
     if (result.success) {
       return NextResponse.json({

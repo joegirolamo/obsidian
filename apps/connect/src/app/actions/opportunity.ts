@@ -196,7 +196,7 @@ export async function getOpportunitiesPublishStatus(businessId: string) {
   }
 }
 
-export async function generateOpportunitiesWithAI(businessId: string, category: string) {
+export async function generateOpportunitiesWithAI(businessId: string, category: string, userIdFromRequest?: string) {
   try {
     // Enhanced authentication handling
     console.log('Generating opportunities for business:', businessId, 'category:', category);
@@ -205,13 +205,14 @@ export async function generateOpportunitiesWithAI(businessId: string, category: 
     const session = await getServerSession(authOptions);
     console.log('Opportunities - Session from getServerSession:', session ? 'Found' : 'Not found');
     
-    if (!session?.user) {
-      console.error('No authenticated user found in session');
-      throw new Error('Unauthorized: No session found');
+    // Use either the session user ID or the provided userIdFromRequest
+    const userId = session?.user?.id || userIdFromRequest;
+    
+    if (!userId) {
+      console.error('No authenticated user found in session or request');
+      throw new Error('Unauthorized: No authenticated user found');
     }
 
-    // Extract user info
-    const userId = session.user.id;
     console.log('Using user ID for authentication:', userId);
 
     // Check if user is admin - always verify in database
