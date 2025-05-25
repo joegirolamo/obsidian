@@ -1,51 +1,61 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { getBusinessByAdminId } from '@/app/actions/business';
 import { useSession } from 'next-auth/react';
 
 export default function AdminOverviewPage() {
-  const params = useParams();
   const router = useRouter();
-  const { data: session } = useSession();
-  const [business, setBusiness] = useState<any>(null);
+  const { data: session, status } = useSession();
   const [isLoading, setIsLoading] = useState(true);
 
+  // The main purpose of this page is to redirect to business profile
   useEffect(() => {
-    const fetchBusiness = async () => {
+    const fetchBusinessAndRedirect = async () => {
+      console.log('AdminPage: Checking for businesses to redirect');
+      
       if (!session?.user?.id) {
-        setIsLoading(false);
+        if (status === 'unauthenticated') {
+          router.push('/auth/signin');
+        }
         return;
       }
       
-      const result = await getBusinessByAdminId(session.user.id);
-      if (result.success && result.business) {
-        setBusiness(result.business);
+      try {
+        console.log('AdminPage: Fetching businesses for user:', session.user.id);
+        const result = await getBusinessByAdminId(session.user.id);
+        
+        if (result.success && result.businesses && result.businesses.length > 0) {
+          // Sort businesses by creation date (newest first)
+          const sortedBusinesses = [...result.businesses].sort(
+            (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
+          
+          // Get the most recent business
+          const mostRecentBusiness = sortedBusinesses[0];
+          console.log('AdminPage: Most recent business found:', mostRecentBusiness.id);
+          
+          // Redirect to the business profile page with the business ID
+          const redirectUrl = `/admin/business-profile?businessId=${mostRecentBusiness.id}`;
+          console.log('AdminPage: Redirecting to:', redirectUrl);
+          router.push(redirectUrl);
+        } else {
+          console.log('AdminPage: No businesses found or error in response:', result);
+          setIsLoading(false);
+        }
+      } catch (error) {
+        console.error('AdminPage: Error fetching businesses:', error);
+        setIsLoading(false);
       }
-      setIsLoading(false);
     };
 
-    fetchBusiness();
-  }, [session]);
+    if (status !== 'loading') {
+      fetchBusinessAndRedirect();
+    }
+  }, [session, status, router]);
 
-  // Example metrics data - in a real app, this would come from an API call
-  const metrics = [
-    { name: 'EBITDA Score', value: '8/10', change: '+2', trend: 'up' },
-    { name: 'Revenue Score', value: '7/10', change: '+1', trend: 'up' },
-    { name: 'De-Risk Score', value: '6/10', change: '-1', trend: 'down' },
-    { name: 'Overall Health', value: '85%', change: '+5%', trend: 'up' },
-  ];
-
-  // Example recent activity - in a real app, this would come from an API call
-  const recentActivity = [
-    { id: 1, type: 'update', description: 'Updated EBITDA assessment', date: '2 hours ago' },
-    { id: 2, type: 'publish', description: 'Published scorecard to portal', date: '1 day ago' },
-    { id: 3, type: 'create', description: 'Added new opportunity', date: '2 days ago' },
-    { id: 4, type: 'update', description: 'Updated business details', date: '3 days ago' },
-  ];
-
-  if (isLoading) {
+  if (status === 'loading' || isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -56,6 +66,7 @@ export default function AdminOverviewPage() {
     );
   }
 
+  // This content will only show if there are no businesses
   return (
     <div>
       <div className="mb-8">
@@ -63,99 +74,26 @@ export default function AdminOverviewPage() {
           <div>
             <h1 className="heading-1">Dashboard</h1>
             <p className="text-body mt-2">
-              Workspace overview and activity
+              Create your first workspace to get started
             </p>
           </div>
         </div>
       </div>
 
-      {/* Metrics Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        {metrics.map((metric) => (
-          <div key={metric.name} className="card">
-            <div className="card-body">
-              <h3 className="text-body mb-2">{metric.name}</h3>
-              <div className="flex items-baseline justify-between">
-                <span className="heading-2">{metric.value}</span>
-                <div className={`flex items-center ${
-                  metric.trend === 'up' ? 'text-success' : 'text-error'
-                }`}>
-                  {metric.trend === 'up' ? '↑' : '↓'}
-                  <span className="ml-1">{metric.change}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Recent Activity */}
       <div className="card">
         <div className="card-header">
-          <h2 className="heading-2">Recent Activity</h2>
+          <h2 className="heading-2">Getting Started</h2>
         </div>
         <div className="card-body">
-          <div className="divide-y divide-gray-200">
-            {recentActivity.map((activity) => (
-              <div key={activity.id} className="py-4 first:pt-0 last:pb-0">
-                <div className="flex justify-between">
-                  <div>
-                    <p className="text-body">{activity.description}</p>
-                  </div>
-                  <span className="text-body">{activity.date}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
-        <div className="card">
-          <div className="card-header">
-            <h2 className="heading-2">Quick Actions</h2>
-          </div>
-          <div className="card-body">
-            <div className="space-y-4">
-              <button className="btn-primary w-full">Update Scorecard</button>
-              {isLoading ? (
-                <button 
-                  className="btn-secondary w-full opacity-50 cursor-not-allowed"
-                  disabled
-                >
-                  Loading...
-                </button>
-              ) : business ? (
-                <button 
-                  onClick={() => router.push(`/admin/business-details/${business.id}`)}
-                  className="btn-secondary w-full"
-                >
-                  View Business Details
-                </button>
-              ) : (
-                <button 
-                  onClick={() => router.push('/admin/business-details/new')}
-                  className="btn-secondary w-full"
-                >
-                  Create Business
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Notes or Reminders */}
-        <div className="card">
-          <div className="card-header">
-            <h2 className="heading-2">Notes</h2>
-          </div>
-          <div className="card-body">
-            <textarea
-              className="form-input h-[120px]"
-              placeholder="Add notes or reminders..."
-            />
-          </div>
+          <p className="text-gray-600 mb-4">
+            You don't have any workspaces yet. Create your first workspace to start using Obsidian.
+          </p>
+          <button 
+            onClick={() => router.push('/admin/new')}
+            className="btn-primary"
+          >
+            Create Workspace
+          </button>
         </div>
       </div>
     </div>

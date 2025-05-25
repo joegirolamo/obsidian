@@ -7,6 +7,8 @@ export { default as ObsidianLogo } from './ObsidianLogo';
 export { default as ClientTruncatedText } from './ClientTruncatedText';
 export { default as ServerTruncatedText } from './ServerTruncatedText';
 export { default as EmptyState } from './EmptyState';
+export { default as WebsiteAnalyzer } from './WebsiteAnalyzer';
+export { default as BusinessAnalysisDetails } from './BusinessAnalysisDetails';
 
 // Admin Components
 export { default as AdminNav } from './AdminNav';

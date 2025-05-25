@@ -42,39 +42,59 @@ export default function AdminNav() {
         return;
       }
       
-      const result = await getBusinessByAdminId(session.user.id);
-      if (result.success && result.businesses) {
-        const formattedBusinesses = result.businesses.map(business => ({
-          id: business.id,
-          name: business.name,
-          createdAt: business.createdAt.toString()
-        }));
-        setBusinesses(formattedBusinesses);
+      try {
+        console.log('AdminNav: Fetching businesses for user:', session.user.id);
+        const result = await getBusinessByAdminId(session.user.id);
         
-        // Get the business ID from URL params
-        const businessId = searchParams.get('businessId');
-        
-        // If there's a business ID in the URL and it exists in our businesses list
-        if (businessId && formattedBusinesses.some(b => b.id === businessId)) {
-          const business = formattedBusinesses.find(b => b.id === businessId);
-          if (business) {
-            setSelectedBusiness(business);
+        if (result.success && result.businesses) {
+          // Sort businesses by creation date (newest first)
+          const formattedBusinesses = result.businesses
+            .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+            .map(business => ({
+              id: business.id,
+              name: business.name,
+              createdAt: business.createdAt.toString()
+            }));
+            
+          setBusinesses(formattedBusinesses);
+          console.log('AdminNav: Businesses fetched:', formattedBusinesses.length);
+          
+          // Get the business ID from URL params
+          const businessId = searchParams.get('businessId');
+          console.log('AdminNav: URL businessId param:', businessId);
+          
+          // If there's a business ID in the URL and it exists in our businesses list
+          if (businessId && formattedBusinesses.some(b => b.id === businessId)) {
+            const business = formattedBusinesses.find(b => b.id === businessId);
+            if (business) {
+              console.log('AdminNav: Setting selected business from URL param:', business.id);
+              setSelectedBusiness(business);
+            }
           }
+          // If no business ID in URL but we have businesses, select the first one (most recent)
+          else if (formattedBusinesses.length > 0 && !businessId) {
+            console.log('AdminNav: No businessId in URL, selecting most recent:', formattedBusinesses[0].id);
+            setSelectedBusiness(formattedBusinesses[0]);
+            
+            // Only update URL if we're on a business-related page
+            if (pathname.startsWith('/admin')) {
+              // Update URL with the first business ID
+              console.log('AdminNav: Redirecting to business profile with most recent business');
+              router.push(`/admin/business-profile?businessId=${formattedBusinesses[0].id}`);
+            }
+          }
+        } else {
+          console.log('AdminNav: No businesses found or error fetching businesses', result.error);
         }
-        // If no business ID in URL but we have businesses, select the first one
-        else if (formattedBusinesses.length > 0 && !businessId) {
-          setSelectedBusiness(formattedBusinesses[0]);
-          // Update URL with the first business ID
-          const params = new URLSearchParams(searchParams);
-          params.set('businessId', formattedBusinesses[0].id);
-          router.push(`${pathname}?${params.toString()}`);
-        }
+      } catch (error) {
+        console.error('AdminNav: Error fetching businesses:', error);
       }
+      
       setIsLoading(false);
     };
 
     fetchBusinesses();
-  }, [session, searchParams, pathname]);
+  }, [session, searchParams, pathname, router]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -102,11 +122,27 @@ export default function AdminNav() {
     setIsOpen(false);
     
     // Update URL with selected business ID
-    const params = new URLSearchParams(searchParams);
-    params.set('businessId', business.id);
+    console.log('AdminNav: User selected business:', business.id);
     
-    // Keep the current path but update the query params
-    router.push(`${pathname}?${params.toString()}`);
+    // If we're already on the business profile page, force a reload to clear any cached data
+    if (pathname.includes('/admin/business-profile')) {
+      console.log('AdminNav: Already on business profile, forcing reload with new business');
+      // Use a navigation pattern that ensures complete reset
+      const navigateWithReset = async () => {
+        // First navigate away
+        router.push('/admin');
+        // Then wait a bit
+        await new Promise(resolve => setTimeout(resolve, 50));
+        // Then navigate back with new ID
+        router.push(`/admin/business-profile?businessId=${business.id}`);
+      };
+      
+      // Execute the navigation
+      navigateWithReset();
+    } else {
+      // Regular navigation to business profile
+      router.push(`/admin/business-profile?businessId=${business.id}`);
+    }
   };
 
   const getNavItems = () => {

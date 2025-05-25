@@ -205,29 +205,16 @@ export async function getBusinessById(businessId: string) {
   try {
     const business = await prisma.business.findUnique({
       where: { id: businessId },
-      select: {
-        id: true,
-        name: true,
-        code: true,
-        industry: true,
-        website: true,
-        description: true,
-        properties: true,
-        connections: true,
-        createdAt: true,
-        updatedAt: true,
-        adminId: true,
-      }
     });
-
+    
     if (!business) {
       return { success: false, error: 'Business not found' };
     }
-
+    
     return { success: true, business };
   } catch (error) {
-    console.error('Error getting business:', error);
-    return { success: false, error: 'Failed to get business' };
+    console.error('Failed to get business by ID:', error);
+    return { success: false, error: 'Failed to get business by ID' };
   }
 }
 
@@ -254,5 +241,51 @@ export async function updateBusinessConnections(
   } catch (error) {
     console.error('Failed to update business connections:', error);
     return { success: false, error: 'Failed to update business connections' };
+  }
+}
+
+export async function getBusinessAnalysis(businessId: string) {
+  try {
+    const business = await prisma.business.findUnique({
+      where: { id: businessId },
+      select: { connections: true }
+    });
+    
+    if (!business) {
+      return { success: false, error: 'Business not found' };
+    }
+
+    // Parse connections JSON to get analysis data
+    let connections;
+    try {
+      // Handle both string and object types for connections
+      if (typeof business.connections === 'string') {
+        connections = JSON.parse(business.connections);
+      } else {
+        connections = business.connections || {};
+      }
+    } catch (error) {
+      console.error('Error parsing connections:', error);
+      return { success: false, error: 'Failed to parse business data' };
+    }
+
+    // Check if websiteAnalysis exists in connections
+    const analysis = connections.websiteAnalysis;
+    if (!analysis) {
+      return { success: false, error: 'No analysis found' };
+    }
+    
+    return { 
+      success: true, 
+      analysis: {
+        businessModel: analysis.businessModel || '',
+        productOffering: analysis.productOffering || '',
+        valuePropositions: analysis.valuePropositions || [],
+        differentiationHighlights: analysis.differentiationHighlights || []
+      }
+    };
+  } catch (error) {
+    console.error('Failed to get business analysis:', error);
+    return { success: false, error: 'Failed to get business analysis' };
   }
 } 

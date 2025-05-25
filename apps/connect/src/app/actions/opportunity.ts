@@ -224,31 +224,17 @@ export async function generateOpportunitiesWithAI(businessId: string, category: 
       throw new Error('No active AI configuration found');
     }
 
-    // Get business data with its relationships
-    const business = await prisma.business.findUnique({
-      where: { id: businessId },
-      include: {
-        goals: true,
-        kpis: true,
-        metrics: true
-      }
-    });
-
-    if (!business) {
-      throw new Error('Business not found');
+    // Get the full business brain data including website analysis
+    const brainResponse = await fetch(`${process.env.NEXTAUTH_URL}/api/business/${businessId}/ai-brain`);
+    if (!brainResponse.ok) {
+      throw new Error('Failed to fetch business brain data');
     }
-
-    // Prepare the brain data structure
-    const brainData = {
-      business: {
-        name: business.name,
-        industry: business.industry || 'Not specified',
-        description: business.description || 'Not provided',
-      },
-      goals: business.goals || [],
-      kpis: business.kpis || [],
-      metrics: business.metrics || []
-    };
+    
+    const brainData = await brainResponse.json();
+    
+    if (!brainData.business) {
+      throw new Error('Invalid business brain data');
+    }
 
     // Define the category mappings
     const categoryMap: Record<string, string> = {
@@ -276,23 +262,52 @@ export async function generateOpportunitiesWithAI(businessId: string, category: 
     const relevantServiceAreas = bucketServiceAreas[category] || 
       ['Website', 'Digital Product', 'Brand/GTM Strategy', 'SEO', 'Performance Media', 'Email Marketing', 'Content Marketing', 'Social Media', 'CRM'];
 
-    const prompt = `As a digital marketing strategist, I need to generate 3 actionable opportunities for a business. 
+    // Create the base prompt
+    let prompt = `As a digital marketing strategist, I need to generate 3 actionable opportunities for a business. 
     
 Business details:
 Name: ${brainData.business.name}
-Industry: ${brainData.business.industry}
-Description: ${brainData.business.description}
+Industry: ${brainData.business.industry || 'Not specified'}
+Description: ${brainData.business.description || 'Not provided'}
 
 Focus area: ${categoryDescription}
 Service Areas to consider: ${relevantServiceAreas.join(', ')}
+`;
 
-${brainData.goals.length > 0 ? 
+    // Add website analysis data if available
+    if (brainData.websiteAnalysis) {
+      prompt += `
+Website Analysis:
+${brainData.websiteAnalysis.businessModel ? `Business Model: ${brainData.websiteAnalysis.businessModel}` : ''}
+${brainData.websiteAnalysis.productOffering ? `Product/Service Offerings: ${brainData.websiteAnalysis.productOffering}` : ''}
+`;
+
+      // Add value propositions if available
+      if (brainData.websiteAnalysis.valuePropositions && brainData.websiteAnalysis.valuePropositions.length > 0) {
+        prompt += `
+Value Propositions:
+${brainData.websiteAnalysis.valuePropositions.map((prop: string) => `- ${prop}`).join('\n')}
+`;
+      }
+
+      // Add differentiation highlights if available
+      if (brainData.websiteAnalysis.differentiationHighlights && brainData.websiteAnalysis.differentiationHighlights.length > 0) {
+        prompt += `
+Differentiation Highlights:
+${brainData.websiteAnalysis.differentiationHighlights.map((highlight: string) => `- ${highlight}`).join('\n')}
+`;
+      }
+    }
+
+    // Add goals, KPIs, and metrics
+    prompt += `
+${brainData.goals && brainData.goals.length > 0 ? 
   `Business Goals:\n${brainData.goals.map((g: any) => `- ${g.name}: ${g.description || ''}`).join('\n')}` : ''}
 
-${brainData.kpis.length > 0 ? 
+${brainData.kpis && brainData.kpis.length > 0 ? 
   `Key Performance Indicators:\n${brainData.kpis.map((k: any) => `- ${k.name}: ${k.description || ''} (Current: ${k.current || 'Not set'}, Target: ${k.target || 'Not set'})`).join('\n')}` : ''}
 
-${brainData.metrics.length > 0 ? 
+${brainData.metrics && brainData.metrics.length > 0 ? 
   `Metrics:\n${brainData.metrics.map((m: any) => `- ${m.name}: ${m.description || ''} (Value: ${m.value || 'Not set'}, Benchmark: ${m.benchmark || 'Not set'})`).join('\n')}` : ''}
 
 Generate 3 specific, actionable opportunities for the ${categoryDescription} category. For each opportunity, provide:

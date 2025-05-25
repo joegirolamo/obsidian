@@ -75,27 +75,27 @@ model VerificationToken {
 }
 
 model Business {
-  id                       String           @id @default(cuid())
+  id                       String            @id @default(cuid())
   name                     String
-  code                     String           @unique
-  createdAt                DateTime         @default(now())
-  updatedAt                DateTime         @updatedAt
+  code                     String            @unique
+  createdAt                DateTime          @default(now())
+  updatedAt                DateTime          @updatedAt
   adminId                  String
   industry                 String?
   website                  String?
-  connections              Json?            @default("{}")
+  connections              Json?             @default("{}")
   description              String?
-  properties               String[]         @default([])
-  isOpportunitiesPublished Boolean          @default(false)
-  isScorecardPublished     Boolean          @default(false)
-  admin                    User             @relation("BusinessAdmin", fields: [adminId], references: [id])
+  properties               String[]          @default([])
+  isOpportunitiesPublished Boolean           @default(false)
+  isScorecardPublished     Boolean           @default(false)
+  admin                    User              @relation("BusinessAdmin", fields: [adminId], references: [id])
   clientPortals            ClientPortal?
   intakeQuestions          IntakeQuestion[]
   metrics                  Metric[]
   opportunities            Opportunity[]
   Scorecard                Scorecard[]
   tools                    Tool[]
-  users                    User[]           @relation("BusinessUsers")
+  users                    User[]            @relation("BusinessUsers")
   goals                    Goal[]
   kpis                     KPI[]
 }

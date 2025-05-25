@@ -2,7 +2,7 @@
 
 import AdminNav from '@/components/AdminNav';
 import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useEffect } from 'react';
 import { SessionProvider } from 'next-auth/react';
 
@@ -25,12 +25,18 @@ function AdminLayoutContent({
 }) {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
     if (status === 'unauthenticated') {
       router.push('/auth/signin');
     }
   }, [status, router]);
+
+  // Add logging for the current path
+  useEffect(() => {
+    console.log('AdminLayout: Current path:', pathname);
+  }, [pathname]);
 
   if (status === 'loading') {
     return (

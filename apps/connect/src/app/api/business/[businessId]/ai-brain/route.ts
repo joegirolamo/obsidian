@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getBusinessById } from '@/app/actions/business';
+import { getBusinessById, getBusinessAnalysis } from '@/app/actions/business';
 import { getBusinessGoalsAction, getBusinessKPIsAction, getBusinessMetricsAction } from '@/app/actions/serverActions';
 
 export async function GET(
@@ -22,6 +22,22 @@ export async function GET(
     }
 
     const business = businessResult.business;
+
+    // Get website analysis data if available
+    let websiteAnalysis = null;
+    try {
+      const analysisResult = await getBusinessAnalysis(businessId);
+      if (analysisResult.success && analysisResult.analysis) {
+        websiteAnalysis = {
+          businessModel: analysisResult.analysis.businessModel,
+          productOffering: analysisResult.analysis.productOffering,
+          valuePropositions: analysisResult.analysis.valuePropositions,
+          differentiationHighlights: analysisResult.analysis.differentiationHighlights
+        };
+      }
+    } catch (error) {
+      console.warn('Error fetching website analysis:', error);
+    }
 
     // Get business goals and simplify structure
     const goalsResult = await getBusinessGoalsAction(businessId);
@@ -123,6 +139,7 @@ export async function GET(
         description: business.description || null,
         properties: business.properties || []
       },
+      websiteAnalysis,
       goals,
       kpis,
       metrics,
