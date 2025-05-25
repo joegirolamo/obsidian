@@ -8,10 +8,17 @@ export default async function middleware(request: NextRequestWithAuth) {
   const isAdminPage = request.nextUrl.pathname.startsWith('/admin');
   const isConnectPage = request.nextUrl.pathname.startsWith('/connect');
   const isConnectApi = request.nextUrl.pathname.startsWith('/api/connect');
+  const isAdminApi = request.nextUrl.pathname.startsWith('/api/admin');
   const isRootAdminPage = request.nextUrl.pathname === '/admin' || request.nextUrl.pathname === '/admin/'; 
 
   // Allow access to connect pages and API
   if (isConnectPage || isConnectApi) {
+    return NextResponse.next();
+  }
+
+  // For admin API routes, let the route handlers handle authentication
+  if (isAdminApi) {
+    console.log('Admin API route detected in middleware, passing through', request.nextUrl.pathname);
     return NextResponse.next();
   }
 
@@ -42,5 +49,5 @@ export default async function middleware(request: NextRequestWithAuth) {
 }
 
 export const config = {
-  matcher: ['/admin/:path*', '/auth/:path*', '/connect/:path*', '/api/connect/:path*'],
+  matcher: ['/admin/:path*', '/auth/:path*', '/connect/:path*', '/api/connect/:path*', '/api/admin/:path*'],
 }; 

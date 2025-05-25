@@ -14,12 +14,30 @@ export async function POST(request: Request) {
     
     // Try session authentication first
     const session = await getServerSession(authOptions);
+    console.log('Session from API route:', session ? 'Found' : 'Not found');
+    
     if (session?.user?.id) {
+      console.log('Using session authentication with user ID:', session.user.id);
       authenticatedUserId = session.user.id;
     } 
     // Fall back to userId provided in request body
     else if (userId) {
+      console.log('Using provided userId for authentication:', userId);
       authenticatedUserId = userId;
+      
+      // Verify this user exists and is an admin
+      const userExists = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { id: true, role: true }
+      });
+      
+      if (!userExists) {
+        console.error('User not found in database:', userId);
+        authenticatedUserId = null;
+      } else if (userExists.role !== 'ADMIN') {
+        console.error('User is not an admin:', userId, 'Role:', userExists.role);
+        authenticatedUserId = null;
+      }
     }
     
     // If no authentication method succeeded

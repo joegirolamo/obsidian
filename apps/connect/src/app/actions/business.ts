@@ -333,6 +333,7 @@ export async function analyzeWebsite(websiteUrl: string, userId?: string) {
         businessId: tempBusinessId,
         userId: authenticatedUserId,
       }),
+      credentials: 'include', // Include cookies in the request
     });
 
     if (!response.ok) {
@@ -404,6 +405,7 @@ export async function compareBusinesses(primaryBusinessData: any, competitorData
         competitorData,
         userId: authenticatedUserId,
       }),
+      credentials: 'include', // Include cookies in the request
     });
 
     if (!response.ok) {
