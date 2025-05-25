@@ -1,14 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { PlusCircle, Lightbulb, Sparkles, X, AlertTriangle, Award, Loader2, Pencil } from 'lucide-react';
-import { Button } from '@/components';
+import { PlusCircle, Lightbulb, Sparkles, X, AlertTriangle, Award, Loader2, Pencil, Edit2, Trash2, ChevronDown, Check } from 'lucide-react';
+import { Button, ClientTruncatedText } from '@/components';
 import Toggle from '@/components/shared/Toggle';
 import { useSearchParams } from 'next/navigation';
 import { publishOpportunities, unpublishOpportunities, getOpportunitiesPublishStatus, getBusinessOpportunities, createOpportunity, deleteOpportunity, generateOpportunitiesWithAI, updateOpportunityStatus, updateOpportunity } from '@/app/actions/opportunity';
 import { getBusinessGoalsAction, getBusinessKPIsAction } from '@/app/actions/serverActions';
 import { OpportunityStatus } from '@prisma/client';
-import { ClientTruncatedText } from '@/components';
+import { useSession } from 'next-auth/react';
 
 // Define the sparkle gradient icon as a custom component
 const SparkleGradientIcon = ({className}: {className?: string}) => (
@@ -67,7 +67,8 @@ export default function OpportunitiesPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const searchParams = useSearchParams();
-  const businessId = searchParams.get('businessId');
+  const businessId = searchParams.get('businessId') || '';
+  const { data: session } = useSession();
   const [goals, setGoals] = useState<string[]>([]);
   const [rawOpportunities, setRawOpportunities] = useState<Opportunity[]>([]);
   
@@ -80,7 +81,7 @@ export default function OpportunitiesPage() {
       borderColor: 'border-yellow-200',
       textColor: 'text-yellow-800',
       serviceAreas: ['Brand/GTM Strategy', 'Martech', 'Data & Analytics'],
-      opportunities: []
+      opportunities: [] as Opportunity[]
     },
     {
       name: 'Acquisition',
@@ -89,7 +90,7 @@ export default function OpportunitiesPage() {
       borderColor: 'border-green-200',
       textColor: 'text-green-800',
       serviceAreas: ['Performance Media', 'Campaigns', 'Earned Media'],
-      opportunities: []
+      opportunities: [] as Opportunity[]
     },
     {
       name: 'Conversion',
@@ -98,7 +99,7 @@ export default function OpportunitiesPage() {
       borderColor: 'border-blue-200',
       textColor: 'text-blue-800',
       serviceAreas: ['Website', 'Ecommerce Platforms', 'Digital Product'],
-      opportunities: []
+      opportunities: [] as Opportunity[]
     },
     {
       name: 'Retention',
@@ -107,7 +108,7 @@ export default function OpportunitiesPage() {
       borderColor: 'border-orange-200',
       textColor: 'text-orange-800',
       serviceAreas: ['CRM', 'App', 'Organic Social'],
-      opportunities: []
+      opportunities: [] as Opportunity[]
     }
   ];
   
@@ -214,12 +215,10 @@ export default function OpportunitiesPage() {
     if (isLoading) return;
     
     // Create a copy of buckets to update
-    const updatedBuckets = [...buckets];
-    
-    // Clear existing opportunities
-    updatedBuckets.forEach(bucket => {
-      bucket.opportunities = [];
-    });
+    const updatedBuckets = [...buckets].map(bucket => ({
+      ...bucket,
+      opportunities: [] as Opportunity[]
+    }));
     
     // Track processed IDs to prevent duplicates and create ID map to ensure unique keys
     const processedIds = new Set<string>();
@@ -268,9 +267,12 @@ export default function OpportunitiesPage() {
         targetKPI: newOpportunity.targetKPI || undefined
       });
       
-      if (result.success) {
-        // Update raw opportunities, which will in turn update buckets
-        setRawOpportunities(prev => [result.opportunity, ...prev]);
+      if (result.success && result.opportunity) {
+        // Update raw opportunities with proper type casting
+        setRawOpportunities(prev => [
+          {...result.opportunity, _renderKey: `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`} as Opportunity, 
+          ...prev
+        ]);
         setNewOpportunity({ title: '', description: '', serviceArea: 'Other', targetKPI: '' });
       } else {
         setError('Failed to add opportunity');
@@ -289,20 +291,44 @@ export default function OpportunitiesPage() {
     setIsGenerating(bucketName);
     
     try {
-      const result = await generateOpportunitiesWithAI(businessId, bucketName);
+      console.log('Generating opportunities for bucket:', bucketName);
       
-      if (result.success) {
-        // Refresh opportunities after generation
-        const opportunitiesResult = await getBusinessOpportunities(businessId);
-        if (opportunitiesResult.success) {
-          setRawOpportunities(opportunitiesResult.opportunities);
-        }
+      // Call our new API endpoint with credentials included
+      const response = await fetch('/api/admin/ai-opportunities/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          businessId,
+          category: bucketName
+        }),
+      });
+      
+      console.log('Generation response status:', response.status);
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Generation error response:', errorData);
+        setError(errorData.error || `Failed to generate opportunities (${response.status})`);
+        return;
+      }
+      
+      // Refresh opportunities after generation
+      const opportunitiesResult = await getBusinessOpportunities(businessId);
+      if (opportunitiesResult.success && opportunitiesResult.opportunities) {
+        // Properly type the opportunities
+        setRawOpportunities(opportunitiesResult.opportunities.map(opp => ({
+          ...opp,
+          _renderKey: `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
+        })) as Opportunity[]);
       } else {
-        setError('Failed to generate opportunities');
+        setError('Failed to refresh opportunities after generation');
       }
     } catch (error) {
       console.error('Error generating opportunities:', error);
-      setError('An unexpected error occurred');
+      setError(`Failed to generate opportunities: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setIsGenerating(null);
     }
@@ -366,17 +392,42 @@ export default function OpportunitiesPage() {
     
     try {
       for (const bucket of buckets) {
-        await generateOpportunitiesWithAI(businessId, bucket.name);
+        console.log('Generating opportunities for bucket:', bucket.name);
+        
+        // Call our new API endpoint with credentials included
+        const response = await fetch('/api/admin/ai-opportunities/generate', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({
+            businessId,
+            category: bucket.name
+          }),
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          console.error('Generation error for bucket', bucket.name, ':', errorData);
+          continue; // Continue with next bucket even if one fails
+        }
       }
       
       // Refresh opportunities after generation
       const opportunitiesResult = await getBusinessOpportunities(businessId);
-      if (opportunitiesResult.success) {
-        setRawOpportunities(opportunitiesResult.opportunities);
+      if (opportunitiesResult.success && opportunitiesResult.opportunities) {
+        // Properly type the opportunities
+        setRawOpportunities(opportunitiesResult.opportunities.map(opp => ({
+          ...opp,
+          _renderKey: `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
+        })) as Opportunity[]);
+      } else {
+        setError('Failed to refresh opportunities after generation');
       }
     } catch (error) {
       console.error('Error generating all opportunities:', error);
-      setError('An unexpected error occurred');
+      setError(`Failed to generate opportunities: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setIsGenerating(null);
     }

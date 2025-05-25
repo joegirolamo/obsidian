@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { Plus, Trash2, Sparkles } from "lucide-react";
 import { createOpportunity, deleteOpportunity, publishOpportunities, unpublishOpportunities, getOpportunitiesPublishStatus } from '@/app/actions/opportunity';
 import PublishToggle from '@/components/PublishToggle';
+import { useSession } from 'next-auth/react';
 
 interface OpportunityForm {
   title: string;
@@ -18,7 +19,8 @@ interface OpportunityData extends OpportunityForm {
 
 export default function OpportunitiesPage() {
   const searchParams = useSearchParams();
-  const businessId = searchParams.get('businessId');
+  const businessId = searchParams.get('businessId') || '';
+  const { data: session, status } = useSession();
   
   if (!businessId) {
     console.error('No business ID found in query parameters');
@@ -146,16 +148,28 @@ export default function OpportunitiesPage() {
     setError(null);
     
     try {
+      console.log('Generating opportunities for category:', category);
+      
       const response = await fetch('/api/admin/ai-opportunities', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include', // Include cookies in the request
         body: JSON.stringify({
           businessId,
           category
         }),
       });
+      
+      console.log('Generation response status:', response.status);
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Generation error response:', errorData);
+        setError(errorData.error || `Failed to generate opportunities (${response.status})`);
+        return;
+      }
       
       const data = await response.json();
       
@@ -176,7 +190,7 @@ export default function OpportunitiesPage() {
       }
     } catch (err) {
       console.error('Error generating opportunities:', err);
-      setError('An error occurred while generating opportunities');
+      setError(`Failed to generate opportunities with AI: ${err instanceof Error ? err.message : 'Unknown error'}`);
     } finally {
       setGeneratingCategory(null);
     }

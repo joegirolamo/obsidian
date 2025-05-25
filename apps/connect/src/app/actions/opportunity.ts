@@ -198,20 +198,37 @@ export async function getOpportunitiesPublishStatus(businessId: string) {
 
 export async function generateOpportunitiesWithAI(businessId: string, category: string) {
   try {
-    // Since we're seeing authentication issues, let's simplify by using a direct approach
+    // Enhanced authentication handling
+    console.log('Generating opportunities for business:', businessId, 'category:', category);
     
+    // Try to get session using getServerSession
     const session = await getServerSession(authOptions);
+    console.log('Opportunities - Session from getServerSession:', session ? 'Found' : 'Not found');
+    
     if (!session?.user) {
+      console.error('No authenticated user found in session');
       throw new Error('Unauthorized: No session found');
     }
 
-    // Check if user is admin
+    // Extract user info
+    const userId = session.user.id;
+    console.log('Using user ID for authentication:', userId);
+
+    // Check if user is admin - always verify in database
     const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { role: true }
+      where: { id: userId },
+      select: { role: true, id: true, email: true }
     });
 
-    if (user?.role !== 'ADMIN') {
+    console.log('Opportunities - User found:', user ? 'Yes' : 'No', 'Role:', user?.role);
+
+    if (!user) {
+      console.error('User not found in database');
+      throw new Error('User not found');
+    }
+
+    if (user.role !== 'ADMIN') {
+      console.error('User is not an admin:', user);
       throw new Error('Unauthorized: User is not an admin');
     }
 

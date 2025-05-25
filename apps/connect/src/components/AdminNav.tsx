@@ -13,7 +13,9 @@ import {
   Plus,
   Wrench,
   LineChart,
-  Brain
+  Brain,
+  Swords,
+  Lightbulb
 } from 'lucide-react';
 import ObsidianLogo from './ObsidianLogo';
 import { getBusinessByAdminId } from '@/app/actions/business';
@@ -154,7 +156,7 @@ export default function AdminNav() {
         subItems: [
           { label: 'Profile', href: '/admin/business-profile', icon: Building },
           { label: 'Goals & KPIs', href: '/admin/business-profile/goals', icon: Target },
-          { label: 'Competition', href: '/admin/business-profile/competition', icon: BarChart2 }
+          { label: 'Competition', href: '/admin/business-profile/competition', icon: Swords }
         ]
       },
       {
@@ -171,7 +173,7 @@ export default function AdminNav() {
         href: '/admin/dvcp/scorecards',
         subItems: [
           { label: 'Scorecards', href: '/admin/dvcp/scorecards', icon: Target },
-          { label: 'Opportunities', href: '/admin/dvcp/opportunities', icon: BarChart2 }
+          { label: 'Opportunities', href: '/admin/dvcp/opportunities', icon: Lightbulb }
         ]
       },
       {
