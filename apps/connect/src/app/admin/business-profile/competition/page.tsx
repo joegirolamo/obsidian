@@ -466,7 +466,6 @@ export default function CompetitionPage() {
                   alignItems: 'flex-start'
                 }}
               >
-                {/* Hide scrollbar for Chrome, Safari and Opera */}
                 <style jsx global>{`
                   .no-scrollbar::-webkit-scrollbar {
                     display: none;
@@ -484,7 +483,7 @@ export default function CompetitionPage() {
                     <p className="text-sm text-gray-500 break-words p-1">{primaryBusiness.website}</p>
                   </div>
                   
-                  <div className="space-y-4">
+                  <div className="space-y-4 flex-grow">
                     {/* Description Section with animation */}
                     <div className="border-b pb-2">
                       <button 
@@ -500,8 +499,8 @@ export default function CompetitionPage() {
                       </button>
                       
                       <div 
-                        className={`overflow-hidden transition-all duration-300 ease-in-out ${
-                          collapsedSections.description ? 'max-h-0 opacity-0' : 'max-h-[1000px] opacity-100 mt-1'
+                        className={`transition-all duration-300 ease-in-out ${
+                          collapsedSections.description ? 'max-h-0 opacity-0 overflow-hidden' : 'opacity-100 mt-1'
                         }`}
                       >
                         <p className="text-sm text-gray-600">
@@ -527,8 +526,8 @@ export default function CompetitionPage() {
                           </button>
                           
                           <div 
-                            className={`overflow-hidden transition-all duration-300 ease-in-out ${
-                              collapsedSections.businessModel ? 'max-h-0 opacity-0' : 'max-h-[1000px] opacity-100 mt-1'
+                            className={`transition-all duration-300 ease-in-out ${
+                              collapsedSections.businessModel ? 'max-h-0 opacity-0 overflow-hidden' : 'opacity-100 mt-1'
                             }`}
                           >
                             <p className="text-sm text-gray-600">
@@ -552,8 +551,8 @@ export default function CompetitionPage() {
                           </button>
                           
                           <div 
-                            className={`overflow-hidden transition-all duration-300 ease-in-out ${
-                              collapsedSections.productOffering ? 'max-h-0 opacity-0' : 'max-h-[1000px] opacity-100 mt-1'
+                            className={`transition-all duration-300 ease-in-out ${
+                              collapsedSections.productOffering ? 'max-h-0 opacity-0 overflow-hidden' : 'opacity-100 mt-1'
                             }`}
                           >
                             <p className="text-sm text-gray-600">
@@ -577,8 +576,8 @@ export default function CompetitionPage() {
                           </button>
                           
                           <div 
-                            className={`overflow-hidden transition-all duration-300 ease-in-out ${
-                              collapsedSections.valuePropositions ? 'max-h-0 opacity-0' : 'max-h-[1000px] opacity-100 mt-1'
+                            className={`transition-all duration-300 ease-in-out ${
+                              collapsedSections.valuePropositions ? 'max-h-0 opacity-0 overflow-hidden' : 'opacity-100 mt-1'
                             }`}
                           >
                             {primaryBusiness.analysisData.valuePropositions && 
@@ -609,8 +608,8 @@ export default function CompetitionPage() {
                           </button>
                           
                           <div 
-                            className={`overflow-hidden transition-all duration-300 ease-in-out ${
-                              collapsedSections.differentiationHighlights ? 'max-h-0 opacity-0' : 'max-h-[1000px] opacity-100 mt-1'
+                            className={`transition-all duration-300 ease-in-out ${
+                              collapsedSections.differentiationHighlights ? 'max-h-0 opacity-0 overflow-hidden' : 'opacity-100 mt-1'
                             }`}
                           >
                             {primaryBusiness.analysisData.differentiationHighlights && 
@@ -628,7 +627,7 @@ export default function CompetitionPage() {
                       </>
                     ) : (
                       <div className="flex flex-col h-full">
-                        <div className="flex justify-center items-center flex-grow mt-6">
+                        <div className="flex justify-center items-center flex-grow mt-6 mb-4">
                           <button
                             className="flex items-center text-sm font-medium gap-1 px-6 py-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-colors cursor-pointer"
                             onClick={analyzePrimaryBusiness}
@@ -654,7 +653,7 @@ export default function CompetitionPage() {
                 
                 {/* Competitor Columns - update with animations */}
                 {competitors.map(competitor => (
-                  <div key={competitor.id} className="flex-shrink-0 w-64 border rounded-lg p-4 pb-0 bg-white relative self-start overflow-visible min-h-[260px] flex flex-col">
+                  <div key={competitor.id} className="flex-shrink-0 w-64 border rounded-lg p-4 pb-0 bg-white relative self-start flex flex-col">
                     <button 
                       className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 z-20"
                       onClick={() => removeCompetitor(competitor.id)}
@@ -696,8 +695,8 @@ export default function CompetitionPage() {
                           </button>
                           
                           <div 
-                            className={`overflow-hidden transition-all duration-300 ease-in-out ${
-                              competitorSections[competitor.id]?.businessModel ? 'max-h-0 opacity-0' : 'max-h-[1000px] opacity-100 mt-1'
+                            className={`transition-all duration-300 ease-in-out ${
+                              competitorSections[competitor.id]?.businessModel ? 'max-h-0 opacity-0 overflow-hidden' : 'opacity-100 mt-1'
                             }`}
                           >
                             <p className="text-sm text-gray-600">
@@ -721,8 +720,8 @@ export default function CompetitionPage() {
                           </button>
                           
                           <div 
-                            className={`overflow-hidden transition-all duration-300 ease-in-out ${
-                              competitorSections[competitor.id]?.productOffering ? 'max-h-0 opacity-0' : 'max-h-[1000px] opacity-100 mt-1'
+                            className={`transition-all duration-300 ease-in-out ${
+                              competitorSections[competitor.id]?.productOffering ? 'max-h-0 opacity-0 overflow-hidden' : 'opacity-100 mt-1'
                             }`}
                           >
                             <p className="text-sm text-gray-600">
@@ -746,8 +745,8 @@ export default function CompetitionPage() {
                           </button>
                           
                           <div 
-                            className={`overflow-hidden transition-all duration-300 ease-in-out ${
-                              competitorSections[competitor.id]?.valuePropositions ? 'max-h-0 opacity-0' : 'max-h-[1000px] opacity-100 mt-1'
+                            className={`transition-all duration-300 ease-in-out ${
+                              competitorSections[competitor.id]?.valuePropositions ? 'max-h-0 opacity-0 overflow-hidden' : 'opacity-100 mt-1'
                             }`}
                           >
                             {competitor.analysisData.valuePropositions && 
@@ -778,8 +777,8 @@ export default function CompetitionPage() {
                           </button>
                           
                           <div 
-                            className={`overflow-hidden transition-all duration-300 ease-in-out ${
-                              competitorSections[competitor.id]?.differentiationHighlights ? 'max-h-0 opacity-0' : 'max-h-[1000px] opacity-100 mt-1'
+                            className={`transition-all duration-300 ease-in-out ${
+                              competitorSections[competitor.id]?.differentiationHighlights ? 'max-h-0 opacity-0 overflow-hidden' : 'opacity-100 mt-1'
                             }`}
                           >
                             {competitor.analysisData.differentiationHighlights && 
@@ -816,7 +815,7 @@ export default function CompetitionPage() {
                               
                               <div 
                                 className={`transition-all duration-300 ease-in-out ${
-                                  competitorSections[competitor.id]?.comparisonInsights ? 'max-h-0 opacity-0' : 'max-h-[1200px] opacity-100 mt-2'
+                                  competitorSections[competitor.id]?.comparisonInsights ? 'max-h-0 opacity-0 overflow-hidden' : 'opacity-100 mt-2'
                                 }`}
                               >
                                 {/* Strengths */}
@@ -891,7 +890,7 @@ export default function CompetitionPage() {
                       </div>
                     ) : (
                       <div className="flex flex-col h-full">
-                        <div className="flex justify-center items-center flex-grow mt-6">
+                        <div className="flex justify-center items-center flex-grow mt-6 mb-4">
                           <button
                             className="flex items-center text-sm font-medium gap-1 px-6 py-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-colors cursor-pointer"
                             onClick={() => analyzeCompetitor(competitor.id)}
