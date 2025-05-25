@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Sparkles, Loader2 } from 'lucide-react';
+import { useSession } from 'next-auth/react';
 
 interface WebsiteAnalyzerProps {
   websiteUrl: string;
@@ -16,6 +17,7 @@ export default function WebsiteAnalyzer({
 }: WebsiteAnalyzerProps) {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const session = useSession();
 
   if (!websiteUrl) {
     return null;
@@ -25,24 +27,36 @@ export default function WebsiteAnalyzer({
     setIsAnalyzing(true);
     setError(null);
 
+    console.log('Analyzing website:', websiteUrl);
+    console.log('Session status:', session.status);
+
     try {
       const response = await fetch('/api/admin/analyze-website', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        // Include credentials to ensure cookies are sent with the request
+        credentials: 'include',
         body: JSON.stringify({
           websiteUrl,
           businessId,
+          // Include userId from session as fallback
+          userId: session?.data?.user?.id,
         }),
       });
 
+      console.log('Analysis response status:', response.status);
+
       if (!response.ok) {
         const errorData = await response.json();
+        console.error('Analysis error response:', errorData);
         throw new Error(errorData.error || 'Failed to analyze website');
       }
 
       const result = await response.json();
+      console.log('Analysis result:', result);
+      
       if (result.success && result.data) {
         onAnalysisComplete(result.data);
       } else {

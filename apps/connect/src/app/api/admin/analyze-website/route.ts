@@ -2,11 +2,12 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { getToken } from 'next-auth/jwt';
 
 export async function POST(request: Request) {
   try {
     // Output environment variables for debugging
-    console.log('API Environment:', {
+    console.log('Analyze Website API Environment:', {
       NODE_ENV: process.env.NODE_ENV,
       NEXTAUTH_URL: process.env.NEXTAUTH_URL,
       VERCEL_URL: process.env.VERCEL_URL,
@@ -15,55 +16,69 @@ export async function POST(request: Request) {
     
     // Parse request body first to allow multiple authentication methods
     const body = await request.json();
-    const { websiteUrl, businessId, userId } = body;
+    const { websiteUrl, businessId, userId: providedUserId } = body;
 
-    console.log('Request body:', { websiteUrl, businessId, userId });
+    console.log('Request body:', { websiteUrl, businessId, providedUserId });
 
-    // Authentication check - either through session or provided userId
-    let authenticatedUserId = null;
-    
-    // Try session authentication first
+    // Authentication - try multiple methods
+    // First try to get session using getServerSession
     const session = await getServerSession(authOptions);
-    console.log('Session from API route:', session ? 'Found' : 'Not found', session?.user);
+    console.log('Analyze Website API - Session from getServerSession:', session ? 'Found' : 'Not found');
     
-    if (session?.user?.id) {
-      console.log('Using session authentication with user ID:', session.user.id);
-      authenticatedUserId = session.user.id;
+    // If no session, try to get token directly from request
+    let authenticatedUserId = session?.user?.id;
+    let userRole = session?.user?.role;
+    
+    if (authenticatedUserId) {
+      console.log('Using session authentication with user ID:', authenticatedUserId);
     } 
-    // Fall back to userId provided in request body
-    else if (userId) {
-      console.log('Using provided userId for authentication:', userId);
-      
-      // Verify this user exists and is an admin - ALWAYS do this check
-      const userExists = await prisma.user.findUnique({
-        where: { id: userId },
-        select: { id: true, role: true }
-      });
-      
-      if (!userExists) {
-        console.error('User not found in database:', userId);
-      } else if (userExists.role !== 'ADMIN') {
-        console.error('User is not an admin:', userId, 'Role:', userExists.role);
-      } else {
-        console.log('User verified as admin:', userId);
-        authenticatedUserId = userId;
+    // Next try the token approach
+    else {
+      try {
+        const token = await getToken({ 
+          req: request as any,
+          secret: process.env.NEXTAUTH_SECRET 
+        });
+        
+        console.log('Token from getToken:', token ? 'Found' : 'Not found');
+        
+        if (token) {
+          authenticatedUserId = token.id as string;
+          userRole = token.role as string;
+          console.log('Retrieved user info from token:', { authenticatedUserId, userRole });
+        }
+      } catch (error) {
+        console.error('Error getting token:', error);
       }
+    }
+    
+    // Finally, try userId from request body
+    if (!authenticatedUserId && providedUserId) {
+      console.log('Using provided userId for authentication:', providedUserId);
+      authenticatedUserId = providedUserId;
     }
     
     // If no authentication method succeeded
     if (!authenticatedUserId) {
-      console.error('Unauthorized: No valid authentication found');
+      console.error('Analyze Website API - Unauthorized: No valid authentication found');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Check if user is admin
+    // Check if user is admin - always verify in database regardless of token
     const user = await prisma.user.findUnique({
       where: { id: authenticatedUserId },
-      select: { role: true }
+      select: { role: true, id: true, email: true }
     });
 
-    if (user?.role !== 'ADMIN') {
-      console.error('Unauthorized: User is not an admin', user);
+    console.log('Analyze Website API - User found:', user ? 'Yes' : 'No', 'Role:', user?.role);
+
+    if (!user) {
+      console.error('Analyze Website API - User not found in database');
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    if (user.role !== 'ADMIN') {
+      console.error('Analyze Website API - Unauthorized: Not an admin', user);
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
