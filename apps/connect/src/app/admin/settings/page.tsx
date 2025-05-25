@@ -88,7 +88,24 @@ export default function SettingsPage() {
   useEffect(() => {
     const fetchToolConfigurations = async () => {
       try {
-        const response = await fetch('/api/admin/tool-configurations');
+        console.log('Fetching tool configurations with user:', session?.user?.id);
+        
+        if (!session?.user?.id) {
+          console.log('No user session found for tool config fetch');
+          return;
+        }
+        
+        const response = await fetch('/api/admin/tool-configurations', {
+          credentials: 'include' // Include cookies in the request
+        });
+        
+        console.log('Tool Config API response status:', response.status);
+        
+        if (!response.ok) {
+          console.error('Error fetching tool configurations:', response.status);
+          return;
+        }
+        
         const data = await response.json();
         
         if (data.success) {
@@ -107,13 +124,30 @@ export default function SettingsPage() {
     };
 
     fetchToolConfigurations();
-  }, []);
+  }, [session]);
 
   // Fetch AI configurations
   useEffect(() => {
     const fetchAIConfigurations = async () => {
       try {
-        const response = await fetch('/api/admin/ai-configuration');
+        console.log('Fetching AI configurations with user:', session?.user?.id);
+        
+        if (!session?.user?.id) {
+          console.log('No user session found for AI config fetch');
+          return;
+        }
+        
+        const response = await fetch('/api/admin/ai-configuration', {
+          credentials: 'include' // Include cookies in the request
+        });
+        
+        console.log('AI Config API GET response status:', response.status);
+        
+        if (!response.ok) {
+          console.error('Error fetching AI configurations:', response.status);
+          return;
+        }
+        
         const data = await response.json();
         
         if (data.success) {
@@ -146,7 +180,7 @@ export default function SettingsPage() {
     };
 
     fetchAIConfigurations();
-  }, []);
+  }, [session]);
 
   // Add navigation debugging
   useEffect(() => {
@@ -177,11 +211,19 @@ export default function SettingsPage() {
       return;
     }
     
+    if (!session?.user?.id) {
+      console.error('No authenticated user found');
+      setError('Authentication error: Please sign in again');
+      return;
+    }
+    
     setIsLoading(true);
     setError(null);
     setSuccess(null);
     
     try {
+      console.log('Saving AI config with session user:', session.user.id);
+      
       const response = await fetch('/api/admin/ai-configuration', {
         method: 'POST',
         headers: {
@@ -190,8 +232,23 @@ export default function SettingsPage() {
         body: JSON.stringify({
           ...aiConfigForm,
           id: aiConfigurations.length > 0 ? aiConfigurations[0].id : undefined
-        })
+        }),
+        credentials: 'include' // Include auth cookies in the request
       });
+      
+      console.log('AI Config API response status:', response.status);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Error response from AI Config API:', response.status, errorText);
+        try {
+          const errorData = JSON.parse(errorText);
+          setError(errorData.error || `Failed to save (${response.status})`);
+        } catch (e) {
+          setError(`Failed to save configuration (${response.status}): ${errorText.substring(0, 100)}`);
+        }
+        return;
+      }
       
       const data = await response.json();
       

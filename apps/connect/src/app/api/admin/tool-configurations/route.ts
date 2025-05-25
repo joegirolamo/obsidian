@@ -5,10 +5,38 @@ import { prisma } from '@/lib/prisma';
 
 export async function GET() {
   try {
+    // Output environment variables for debugging
+    console.log('Tool Config API Environment:', {
+      NODE_ENV: process.env.NODE_ENV,
+      NEXTAUTH_URL: process.env.NEXTAUTH_URL,
+      VERCEL_URL: process.env.VERCEL_URL,
+      VERCEL_ENV: process.env.VERCEL_ENV
+    });
+    
     const session = await getServerSession(authOptions);
+    console.log('Tool Config API - Session found:', session ? 'Yes' : 'No', session?.user?.id);
 
     if (!session?.user?.id) {
+      console.error('Tool Config API - Unauthorized: No session found');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Check if user is admin
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { role: true, id: true, email: true }
+    });
+
+    console.log('Tool Config API - User found:', user ? 'Yes' : 'No', 'Role:', user?.role);
+
+    if (!user) {
+      console.error('Tool Config API - User not found in database');
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    if (user.role !== 'ADMIN') {
+      console.error('Tool Config API - Unauthorized: Not an admin', user);
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
     // Log environment variables for debugging
@@ -83,10 +111,38 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    // Output environment variables for debugging
+    console.log('Tool Config API POST Environment:', {
+      NODE_ENV: process.env.NODE_ENV,
+      NEXTAUTH_URL: process.env.NEXTAUTH_URL,
+      VERCEL_URL: process.env.VERCEL_URL,
+      VERCEL_ENV: process.env.VERCEL_ENV
+    });
+    
     const session = await getServerSession(authOptions);
+    console.log('Tool Config API POST - Session found:', session ? 'Yes' : 'No', session?.user?.id);
 
     if (!session?.user?.id) {
+      console.error('Tool Config API POST - Unauthorized: No session found');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Check if user is admin
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { role: true, id: true, email: true }
+    });
+
+    console.log('Tool Config API POST - User found:', user ? 'Yes' : 'No', 'Role:', user?.role);
+
+    if (!user) {
+      console.error('Tool Config API POST - User not found in database');
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    if (user.role !== 'ADMIN') {
+      console.error('Tool Config API POST - Unauthorized: Not an admin', user);
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
     const body = await request.json();

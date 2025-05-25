@@ -6,19 +6,37 @@ import { prisma } from '@/lib/prisma';
 // Get all AI configurations or check if configurations exist
 export async function GET() {
   try {
+    // Output environment variables for debugging
+    console.log('AI Config API GET Environment:', {
+      NODE_ENV: process.env.NODE_ENV,
+      NEXTAUTH_URL: process.env.NEXTAUTH_URL,
+      VERCEL_URL: process.env.VERCEL_URL,
+      VERCEL_ENV: process.env.VERCEL_ENV
+    });
+    
     const session = await getServerSession(authOptions);
+    console.log('AI Config API GET - Session found:', session ? 'Yes' : 'No', session?.user?.id);
 
     if (!session?.user?.id) {
+      console.error('AI Config API GET - Unauthorized: No session found');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Check if user is admin
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { role: true }
+      select: { role: true, id: true, email: true }
     });
 
-    if (user?.role !== 'ADMIN') {
+    console.log('AI Config API GET - User found:', user ? 'Yes' : 'No', 'Role:', user?.role);
+
+    if (!user) {
+      console.error('AI Config API GET - User not found in database');
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    if (user.role !== 'ADMIN') {
+      console.error('AI Config API GET - Unauthorized: Not an admin', user);
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
@@ -68,26 +86,51 @@ export async function GET() {
 // Create or update an AI configuration
 export async function POST(request: Request) {
   try {
+    // Output environment variables for debugging
+    console.log('AI Config API Environment:', {
+      NODE_ENV: process.env.NODE_ENV,
+      NEXTAUTH_URL: process.env.NEXTAUTH_URL,
+      VERCEL_URL: process.env.VERCEL_URL,
+      VERCEL_ENV: process.env.VERCEL_ENV
+    });
+    
     const session = await getServerSession(authOptions);
+    console.log('AI Config API - Session found:', session ? 'Yes' : 'No', session?.user?.id);
 
     if (!session?.user?.id) {
+      console.error('AI Config API - Unauthorized: No session found');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Check if user is admin
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { role: true }
+      select: { role: true, id: true, email: true }
     });
 
-    if (user?.role !== 'ADMIN') {
+    console.log('AI Config API - User found:', user ? 'Yes' : 'No', 'Role:', user?.role);
+
+    if (!user) {
+      console.error('AI Config API - User not found in database');
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    if (user.role !== 'ADMIN') {
+      console.error('AI Config API - Unauthorized: Not an admin', user);
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
     const body = await request.json();
     const { id, provider, apiKey, model, options, isActive } = body;
+    console.log('AI Config API - Request body received:', { 
+      id: id ? 'provided' : 'not provided', 
+      provider, 
+      model, 
+      isActive 
+    });
 
     if (!provider || !apiKey || !model) {
+      console.error('AI Config API - Missing required fields');
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
@@ -137,19 +180,37 @@ export async function POST(request: Request) {
 // Delete an AI configuration
 export async function DELETE(request: Request) {
   try {
+    // Output environment variables for debugging
+    console.log('AI Config API DELETE Environment:', {
+      NODE_ENV: process.env.NODE_ENV,
+      NEXTAUTH_URL: process.env.NEXTAUTH_URL,
+      VERCEL_URL: process.env.VERCEL_URL,
+      VERCEL_ENV: process.env.VERCEL_ENV
+    });
+    
     const session = await getServerSession(authOptions);
+    console.log('AI Config API DELETE - Session found:', session ? 'Yes' : 'No', session?.user?.id);
 
     if (!session?.user?.id) {
+      console.error('AI Config API DELETE - Unauthorized: No session found');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
     // Check if user is admin
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { role: true }
+      select: { role: true, id: true, email: true }
     });
 
-    if (user?.role !== 'ADMIN') {
+    console.log('AI Config API DELETE - User found:', user ? 'Yes' : 'No', 'Role:', user?.role);
+
+    if (!user) {
+      console.error('AI Config API DELETE - User not found in database');
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    if (user.role !== 'ADMIN') {
+      console.error('AI Config API DELETE - Unauthorized: Not an admin', user);
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
