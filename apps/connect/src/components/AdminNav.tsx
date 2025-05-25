@@ -72,7 +72,8 @@ export default function AdminNav() {
             }
           }
           // If no business ID in URL but we have businesses, select the first one (most recent)
-          else if (formattedBusinesses.length > 0 && !businessId) {
+          // Don't redirect if we're on the new workspace page
+          else if (formattedBusinesses.length > 0 && !businessId && !pathname.includes('/admin/new')) {
             console.log('AdminNav: No businessId in URL, selecting most recent:', formattedBusinesses[0].id);
             setSelectedBusiness(formattedBusinesses[0]);
             

@@ -22,6 +22,14 @@ export default function AdminOverviewPage() {
         return;
       }
       
+      // Check if we're on the new workspace page already
+      const currentPath = window.location.pathname;
+      if (currentPath === '/admin/new') {
+        console.log('AdminPage: Already on new workspace page, skipping redirect');
+        setIsLoading(false);
+        return;
+      }
+      
       try {
         console.log('AdminPage: Fetching businesses for user:', session.user.id);
         const result = await getBusinessByAdminId(session.user.id);
