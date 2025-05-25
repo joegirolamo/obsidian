@@ -72,8 +72,8 @@ export default function AdminNav() {
             }
           }
           // If no business ID in URL but we have businesses, select the first one (most recent)
-          // Don't redirect if we're on the new workspace page
-          else if (formattedBusinesses.length > 0 && !businessId && !pathname.includes('/admin/new')) {
+          // Don't redirect if we're on the new workspace page or settings page
+          else if (formattedBusinesses.length > 0 && !businessId && !pathname.includes('/admin/new') && !pathname.includes('/admin/settings')) {
             console.log('AdminNav: No businessId in URL, selecting most recent:', formattedBusinesses[0].id);
             setSelectedBusiness(formattedBusinesses[0]);
             
@@ -365,6 +365,7 @@ export default function AdminNav() {
             <Link
               href="/admin/settings"
               className="p-2 text-gray-500 hover:text-gray-300 rounded-lg hover:bg-gray-800"
+              title="Settings"
             >
               <Settings className="w-5 h-5" />
             </Link>

@@ -148,6 +148,12 @@ export default function SettingsPage() {
     fetchAIConfigurations();
   }, []);
 
+  // Add navigation debugging
+  useEffect(() => {
+    console.log('Settings page mounted. Current pathname:', window.location.pathname);
+    console.log('Settings page search params:', window.location.search);
+  }, []);
+
   const handleNotificationClose = () => {
     setShowNotification(false);
     const url = new URL(window.location.href);

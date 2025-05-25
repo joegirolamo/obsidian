@@ -16,7 +16,18 @@ export default async function middleware(request: NextRequestWithAuth) {
   const isConnectPage = request.nextUrl.pathname.startsWith('/connect');
   const isConnectApi = request.nextUrl.pathname.startsWith('/api/connect');
   const isAdminApi = request.nextUrl.pathname.startsWith('/api/admin');
-  const isRootAdminPage = request.nextUrl.pathname === '/admin' || request.nextUrl.pathname === '/admin/'; 
+  const isSettingsPage = request.nextUrl.pathname.startsWith('/admin/settings');
+  const isRootAdminPage = request.nextUrl.pathname === '/admin' || request.nextUrl.pathname === '/admin/';
+  
+  console.log('Path checks:', {
+    isAuthPage,
+    isAdminPage,
+    isConnectPage,
+    isConnectApi,
+    isAdminApi,
+    isSettingsPage,
+    isRootAdminPage
+  });
 
   // Allow access to connect pages and API
   if (isConnectPage || isConnectApi) {
@@ -31,11 +42,13 @@ export default async function middleware(request: NextRequestWithAuth) {
 
   // Redirect to admin if authenticated user tries to access auth pages
   if (isAuthPage && token) {
+    console.log('Redirecting from auth page to business profile (auth → admin)');
     return NextResponse.redirect(new URL('/admin/business-profile', request.url));
   }
 
   // Redirect root admin page to business profile
   if (isRootAdminPage && token) {
+    console.log('Redirecting from root admin page to business profile');
     // Create a URL that preserves existing query parameters
     const url = new URL(request.url);
     url.pathname = '/admin/business-profile';
@@ -44,14 +57,17 @@ export default async function middleware(request: NextRequestWithAuth) {
 
   // Redirect to login if unauthenticated user tries to access admin pages
   if (isAdminPage && !token) {
+    console.log('Redirecting to login page (no token)');
     return NextResponse.redirect(new URL('/auth/signin', request.url));
   }
 
   // Check for admin role on admin pages
   if (isAdminPage && token?.role !== 'ADMIN') {
+    console.log('Redirecting to login page (not admin role)');
     return NextResponse.redirect(new URL('/auth/signin', request.url));
   }
 
+  console.log('No redirects, proceeding normally');
   return NextResponse.next();
 }
 
