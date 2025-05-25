@@ -2,9 +2,10 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { getToken } from 'next-auth/jwt';
 
 // Get all AI configurations or check if configurations exist
-export async function GET() {
+export async function GET(request: Request) {
   try {
     // Output environment variables for debugging
     console.log('AI Config API GET Environment:', {
@@ -14,17 +15,42 @@ export async function GET() {
       VERCEL_ENV: process.env.VERCEL_ENV
     });
     
+    // First try to get session using getServerSession
     const session = await getServerSession(authOptions);
-    console.log('AI Config API GET - Session found:', session ? 'Yes' : 'No', session?.user?.id);
+    console.log('AI Config API GET - Session from getServerSession:', session ? 'Found' : 'Not found');
+    
+    // If no session, try to get token directly from cookies
+    let userId = session?.user?.id;
+    let userRole = session?.user?.role;
+    
+    if (!userId) {
+      // Try to get token directly from request
+      try {
+        const token = await getToken({ 
+          req: request as any,
+          secret: process.env.NEXTAUTH_SECRET 
+        });
+        
+        console.log('Token from getToken:', token ? 'Found' : 'Not found');
+        
+        if (token) {
+          userId = token.id as string;
+          userRole = token.role as string;
+          console.log('Retrieved user info from token:', { userId, userRole });
+        }
+      } catch (error) {
+        console.error('Error getting token:', error);
+      }
+    }
 
-    if (!session?.user?.id) {
-      console.error('AI Config API GET - Unauthorized: No session found');
+    if (!userId) {
+      console.error('AI Config API GET - Unauthorized: No session or token found');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Check if user is admin
+    // Check if user is admin - always verify in database regardless of token
     const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
+      where: { id: userId },
       select: { role: true, id: true, email: true }
     });
 
@@ -94,29 +120,54 @@ export async function POST(request: Request) {
       VERCEL_ENV: process.env.VERCEL_ENV
     });
     
+    // First try to get session using getServerSession
     const session = await getServerSession(authOptions);
-    console.log('AI Config API - Session found:', session ? 'Yes' : 'No', session?.user?.id);
+    console.log('AI Config API POST - Session from getServerSession:', session ? 'Found' : 'Not found');
+    
+    // If no session, try to get token directly from cookies
+    let userId = session?.user?.id;
+    let userRole = session?.user?.role;
+    
+    if (!userId) {
+      // Try to get token directly from request
+      try {
+        const token = await getToken({ 
+          req: request as any,
+          secret: process.env.NEXTAUTH_SECRET 
+        });
+        
+        console.log('Token from getToken:', token ? 'Found' : 'Not found');
+        
+        if (token) {
+          userId = token.id as string;
+          userRole = token.role as string;
+          console.log('Retrieved user info from token:', { userId, userRole });
+        }
+      } catch (error) {
+        console.error('Error getting token:', error);
+      }
+    }
 
-    if (!session?.user?.id) {
-      console.error('AI Config API - Unauthorized: No session found');
+    if (!userId) {
+      console.error('AI Config API POST - Unauthorized: No session or token found');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Check if user is admin
+    // Check if user is admin - always verify in database regardless of token
     const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
+      where: { id: userId },
       select: { role: true, id: true, email: true }
     });
 
-    console.log('AI Config API - User found:', user ? 'Yes' : 'No', 'Role:', user?.role);
+    console.log('AI Config API POST - User found:', user ? 'Yes' : 'No', 'Role:', user?.role);
 
     if (!user) {
-      console.error('AI Config API - User not found in database');
+      console.error('AI Config API POST - User not found in database');
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
     if (user.role !== 'ADMIN') {
-      console.error('AI Config API - Unauthorized: Not an admin', user);
+      console.error('AI Config API POST - Unauthorized: Not an admin', user);
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
@@ -188,17 +239,42 @@ export async function DELETE(request: Request) {
       VERCEL_ENV: process.env.VERCEL_ENV
     });
     
+    // First try to get session using getServerSession
     const session = await getServerSession(authOptions);
-    console.log('AI Config API DELETE - Session found:', session ? 'Yes' : 'No', session?.user?.id);
+    console.log('AI Config API DELETE - Session from getServerSession:', session ? 'Found' : 'Not found');
+    
+    // If no session, try to get token directly from cookies
+    let userId = session?.user?.id;
+    let userRole = session?.user?.role;
+    
+    if (!userId) {
+      // Try to get token directly from request
+      try {
+        const token = await getToken({ 
+          req: request as any,
+          secret: process.env.NEXTAUTH_SECRET 
+        });
+        
+        console.log('Token from getToken:', token ? 'Found' : 'Not found');
+        
+        if (token) {
+          userId = token.id as string;
+          userRole = token.role as string;
+          console.log('Retrieved user info from token:', { userId, userRole });
+        }
+      } catch (error) {
+        console.error('Error getting token:', error);
+      }
+    }
 
-    if (!session?.user?.id) {
-      console.error('AI Config API DELETE - Unauthorized: No session found');
+    if (!userId) {
+      console.error('AI Config API DELETE - Unauthorized: No session or token found');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
-    // Check if user is admin
+    // Check if user is admin - always verify in database regardless of token
     const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
+      where: { id: userId },
       select: { role: true, id: true, email: true }
     });
 
