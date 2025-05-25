@@ -9,10 +9,17 @@ import bcrypt from "bcryptjs";
 console.log('NextAuth Environment Variables:');
 console.log('NEXTAUTH_URL:', process.env.NEXTAUTH_URL);
 console.log('NEXTAUTH_SECRET:', process.env.NEXTAUTH_SECRET ? 'Set' : 'Not Set');
+console.log('VERCEL_URL:', process.env.VERCEL_URL);
 
 // Ensure NEXTAUTH_URL doesn't have a trailing slash to prevent double slash issues
 const nextAuthUrl = process.env.NEXTAUTH_URL ? process.env.NEXTAUTH_URL.replace(/\/$/, '') : undefined;
 console.log('Normalized NEXTAUTH_URL:', nextAuthUrl);
+
+// For Vercel deployments, use VERCEL_URL if NEXTAUTH_URL is not set
+const vercelUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined;
+if (vercelUrl && !process.env.NEXTAUTH_URL) {
+  console.log('Using VERCEL_URL as fallback:', vercelUrl);
+}
 
 export const authOptions: AuthOptions = {
   adapter: PrismaAdapter(prisma),
@@ -81,6 +88,7 @@ export const authOptions: AuthOptions = {
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
+        console.log('JWT callback with user:', user.id);
         token.role = user.role;
         token.id = user.id;
       }
@@ -88,6 +96,7 @@ export const authOptions: AuthOptions = {
     },
     async session({ session, token }) {
       if (session?.user) {
+        console.log('Session callback with token:', token.id);
         session.user.id = token.id as string;
         session.user.role = token.role as string;
       }

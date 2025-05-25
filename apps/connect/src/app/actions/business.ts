@@ -317,9 +317,16 @@ export async function analyzeWebsite(websiteUrl: string, userId?: string) {
     const tempBusinessId = 'temp-' + Math.random().toString(36).substring(2, 9);
 
     // Build API URL with absolute path to ensure it works in all environments
-    const baseUrl = process.env.NEXTAUTH_URL || process.env.VERCEL_URL || 'http://localhost:3000';
-    const apiUrl = new URL('/api/admin/analyze-website', baseUrl).toString();
+    let baseUrl = process.env.NEXTAUTH_URL;
+    if (!baseUrl && process.env.VERCEL_URL) {
+      baseUrl = `https://${process.env.VERCEL_URL}`;
+    }
+    if (!baseUrl) {
+      baseUrl = 'http://localhost:3000';
+    }
     
+    console.log('Using base URL for API call:', baseUrl);
+    const apiUrl = new URL('/api/admin/analyze-website', baseUrl).toString();
     console.log('Calling API at:', apiUrl);
 
     // Call the analyze-website API endpoint with proper credentials
@@ -389,9 +396,16 @@ export async function compareBusinesses(primaryBusinessData: any, competitorData
     }
 
     // Build API URL with absolute path to ensure it works in all environments
-    const baseUrl = process.env.NEXTAUTH_URL || process.env.VERCEL_URL || 'http://localhost:3000';
-    const apiUrl = new URL('/api/admin/compare-businesses', baseUrl).toString();
+    let baseUrl = process.env.NEXTAUTH_URL;
+    if (!baseUrl && process.env.VERCEL_URL) {
+      baseUrl = `https://${process.env.VERCEL_URL}`;
+    }
+    if (!baseUrl) {
+      baseUrl = 'http://localhost:3000';
+    }
     
+    console.log('Using base URL for API call:', baseUrl);
+    const apiUrl = new URL('/api/admin/compare-businesses', baseUrl).toString();
     console.log('Calling API at:', apiUrl);
 
     // Call the compare-businesses API endpoint

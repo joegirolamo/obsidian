@@ -5,16 +5,26 @@ import { prisma } from '@/lib/prisma';
 
 export async function POST(request: Request) {
   try {
+    // Output environment variables for debugging
+    console.log('API Environment:', {
+      NODE_ENV: process.env.NODE_ENV,
+      NEXTAUTH_URL: process.env.NEXTAUTH_URL,
+      VERCEL_URL: process.env.VERCEL_URL,
+      VERCEL_ENV: process.env.VERCEL_ENV
+    });
+    
     // Parse request body first to allow multiple authentication methods
     const body = await request.json();
     const { websiteUrl, businessId, userId } = body;
+
+    console.log('Request body:', { websiteUrl, businessId, userId });
 
     // Authentication check - either through session or provided userId
     let authenticatedUserId = null;
     
     // Try session authentication first
     const session = await getServerSession(authOptions);
-    console.log('Session from API route:', session ? 'Found' : 'Not found');
+    console.log('Session from API route:', session ? 'Found' : 'Not found', session?.user);
     
     if (session?.user?.id) {
       console.log('Using session authentication with user ID:', session.user.id);
@@ -23,9 +33,8 @@ export async function POST(request: Request) {
     // Fall back to userId provided in request body
     else if (userId) {
       console.log('Using provided userId for authentication:', userId);
-      authenticatedUserId = userId;
       
-      // Verify this user exists and is an admin
+      // Verify this user exists and is an admin - ALWAYS do this check
       const userExists = await prisma.user.findUnique({
         where: { id: userId },
         select: { id: true, role: true }
@@ -33,10 +42,11 @@ export async function POST(request: Request) {
       
       if (!userExists) {
         console.error('User not found in database:', userId);
-        authenticatedUserId = null;
       } else if (userExists.role !== 'ADMIN') {
         console.error('User is not an admin:', userId, 'Role:', userExists.role);
-        authenticatedUserId = null;
+      } else {
+        console.log('User verified as admin:', userId);
+        authenticatedUserId = userId;
       }
     }
     

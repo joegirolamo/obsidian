@@ -4,6 +4,13 @@ import { NextRequestWithAuth } from "next-auth/middleware";
 
 export default async function middleware(request: NextRequestWithAuth) {
   const token = await getToken({ req: request });
+  
+  // Log token and cookies for debugging
+  const cookies = request.cookies.getAll().map(c => c.name);
+  console.log('Middleware request path:', request.nextUrl.pathname);
+  console.log('Token present:', !!token);
+  console.log('Available cookies:', cookies);
+  
   const isAuthPage = request.nextUrl.pathname.startsWith('/auth');
   const isAdminPage = request.nextUrl.pathname.startsWith('/admin');
   const isConnectPage = request.nextUrl.pathname.startsWith('/connect');

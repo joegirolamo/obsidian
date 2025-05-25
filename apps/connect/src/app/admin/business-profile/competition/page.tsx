@@ -218,8 +218,19 @@ export default function CompetitionPage() {
         comp.id === id ? { ...comp, isAnalyzing: true } : comp
       ));
       
+      console.log('Session data:', session);
       console.log('Analyzing competitor website:', competitor.website);
-      const result = await analyzeWebsite(competitor.website, session?.user?.id);
+      
+      if (!session?.user?.id) {
+        console.error('No user ID available in session');
+        setCompetitors(competitors.map(comp => 
+          comp.id === id ? { ...comp, isAnalyzing: false } : comp
+        ));
+        setToast('Authentication error: No user ID available');
+        return;
+      }
+      
+      const result = await analyzeWebsite(competitor.website, session.user.id);
       console.log('Analysis result:', result);
       
       if (result.success) {
@@ -258,8 +269,17 @@ export default function CompetitionPage() {
     try {
       setPrimaryBusiness({ ...primaryBusiness, isAnalyzing: true });
       
+      console.log('Session data:', session);
       console.log('Analyzing primary business website:', primaryBusiness.website);
-      const result = await analyzeWebsite(primaryBusiness.website, session?.user?.id);
+      
+      if (!session?.user?.id) {
+        console.error('No user ID available in session');
+        setPrimaryBusiness({ ...primaryBusiness, isAnalyzing: false });
+        setToast('Authentication error: No user ID available');
+        return;
+      }
+      
+      const result = await analyzeWebsite(primaryBusiness.website, session.user.id);
       console.log('Primary business analysis result:', result);
       
       if (result.success) {
@@ -323,6 +343,17 @@ export default function CompetitionPage() {
         comp.id === competitorId ? { ...comp, isComparing: true } : comp
       ));
       
+      console.log('Session data:', session);
+      
+      if (!session?.user?.id) {
+        console.error('No user ID available in session');
+        setCompetitors(competitors.map(comp => 
+          comp.id === competitorId ? { ...comp, isComparing: false } : comp
+        ));
+        setToast('Authentication error: No user ID available');
+        return;
+      }
+      
       const primaryData = {
         name: primaryBusiness.name,
         description: primaryBusiness.analysisData.description,
@@ -342,7 +373,7 @@ export default function CompetitionPage() {
       };
       
       console.log('Getting comparison insights between', primaryBusiness.name, 'and', competitor.name);
-      const result = await compareBusinesses(primaryData, competitorData, session?.user?.id);
+      const result = await compareBusinesses(primaryData, competitorData, session.user.id);
       console.log('Comparison result:', result);
       
       if (result.success) {
