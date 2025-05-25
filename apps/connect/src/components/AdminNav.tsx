@@ -153,7 +153,8 @@ export default function AdminNav() {
         href: '/admin/business-profile',
         subItems: [
           { label: 'Profile', href: '/admin/business-profile', icon: Building },
-          { label: 'Goals & KPIs', href: '/admin/business-profile/goals', icon: Target }
+          { label: 'Goals & KPIs', href: '/admin/business-profile/goals', icon: Target },
+          { label: 'Competition', href: '/admin/business-profile/competition', icon: BarChart2 }
         ]
       },
       {

@@ -5,25 +5,39 @@ import { prisma } from '@/lib/prisma';
 
 export async function POST(request: Request) {
   try {
-    // Authenticate user
+    // Parse request body first to allow multiple authentication methods
+    const body = await request.json();
+    const { websiteUrl, businessId, userId } = body;
+
+    // Authentication check - either through session or provided userId
+    let authenticatedUserId = null;
+    
+    // Try session authentication first
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    if (session?.user?.id) {
+      authenticatedUserId = session.user.id;
+    } 
+    // Fall back to userId provided in request body
+    else if (userId) {
+      authenticatedUserId = userId;
+    }
+    
+    // If no authentication method succeeded
+    if (!authenticatedUserId) {
+      console.error('Unauthorized: No valid authentication found');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Check if user is admin
     const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
+      where: { id: authenticatedUserId },
       select: { role: true }
     });
 
     if (user?.role !== 'ADMIN') {
+      console.error('Unauthorized: User is not an admin', user);
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
-
-    // Parse request body
-    const body = await request.json();
-    const { websiteUrl, businessId } = body;
 
     if (!websiteUrl) {
       return NextResponse.json(
@@ -39,16 +53,21 @@ export async function POST(request: Request) {
       );
     }
 
-    // Check if business exists
-    const business = await prisma.business.findUnique({
-      where: { id: businessId }
-    });
+    // Skip business existence check for temporary IDs used for comparison
+    const isTemporaryId = businessId.startsWith('temp-');
+    
+    if (!isTemporaryId) {
+      // Check if business exists
+      const business = await prisma.business.findUnique({
+        where: { id: businessId }
+      });
 
-    if (!business) {
-      return NextResponse.json(
-        { error: 'Business not found' },
-        { status: 404 }
-      );
+      if (!business) {
+        return NextResponse.json(
+          { error: 'Business not found' },
+          { status: 404 }
+        );
+      }
     }
 
     // Get active AI configuration
@@ -132,32 +151,46 @@ Only respond with valid JSON. If you can't access the website, provide general i
       );
     }
 
-    // Get existing connections data
-    let connections = {};
-    try {
-      connections = business.connections ? JSON.parse(business.connections as string) : {};
-    } catch (error) {
-      console.error('Error parsing connections:', error);
-      connections = {};
-    }
-
-    // Update business description and store analysis in connections
-    await prisma.business.update({
-      where: { id: businessId },
-      data: { 
-        description: analysisResult.description,
-        connections: JSON.stringify({
-          ...connections,
-          websiteAnalysis: {
-            businessModel: analysisResult.businessModel,
-            productOffering: analysisResult.productOffering,
-            valuePropositions: analysisResult.valuePropositions,
-            differentiationHighlights: analysisResult.differentiationHighlights,
-            analyzedAt: new Date().toISOString()
+    // Only update the database for non-temporary business IDs
+    if (!isTemporaryId) {
+      // Get existing connections data
+      let connections = {};
+      try {
+        const business = await prisma.business.findUnique({
+          where: { id: businessId },
+          select: { connections: true }
+        });
+        
+        if (business?.connections) {
+          if (typeof business.connections === 'string') {
+            connections = JSON.parse(business.connections);
+          } else {
+            connections = business.connections;
           }
-        })
+        }
+      } catch (error) {
+        console.error('Error retrieving or parsing connections:', error);
+        connections = {};
       }
-    });
+
+      // Update business description and store analysis in connections
+      await prisma.business.update({
+        where: { id: businessId },
+        data: { 
+          description: analysisResult.description,
+          connections: JSON.stringify({
+            ...connections,
+            websiteAnalysis: {
+              businessModel: analysisResult.businessModel,
+              productOffering: analysisResult.productOffering,
+              valuePropositions: analysisResult.valuePropositions,
+              differentiationHighlights: analysisResult.differentiationHighlights,
+              analyzedAt: new Date().toISOString()
+            }
+          })
+        }
+      });
+    }
 
     return NextResponse.json({
       success: true,

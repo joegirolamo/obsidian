@@ -2,6 +2,8 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { generateAccessCode } from "@/lib/utils";
 import { createDefaultToolsAction } from "./serverActions";
 
@@ -287,5 +289,148 @@ export async function getBusinessAnalysis(businessId: string) {
   } catch (error) {
     console.error('Failed to get business analysis:', error);
     return { success: false, error: 'Failed to get business analysis' };
+  }
+}
+
+export async function analyzeWebsite(websiteUrl: string, userId?: string) {
+  try {
+    if (!websiteUrl) {
+      return { success: false, error: 'Website URL is required' };
+    }
+
+    console.log('Analyzing website:', websiteUrl, 'with userId:', userId);
+
+    // If no userId is provided, try to get it from session
+    let authenticatedUserId = userId;
+    if (!authenticatedUserId) {
+      const session = await getServerSession(authOptions);
+      authenticatedUserId = session?.user?.id;
+      console.log('Got userId from session:', authenticatedUserId);
+    }
+    
+    if (!authenticatedUserId) {
+      console.error('No authenticated user ID available');
+      return { success: false, error: 'Authentication required' };
+    }
+
+    // Create a temporary businessId if needed
+    const tempBusinessId = 'temp-' + Math.random().toString(36).substring(2, 9);
+
+    // Build API URL with absolute path to ensure it works in all environments
+    const baseUrl = process.env.NEXTAUTH_URL || process.env.VERCEL_URL || 'http://localhost:3000';
+    const apiUrl = new URL('/api/admin/analyze-website', baseUrl).toString();
+    
+    console.log('Calling API at:', apiUrl);
+
+    // Call the analyze-website API endpoint with proper credentials
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        websiteUrl,
+        businessId: tempBusinessId,
+        userId: authenticatedUserId,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+      console.error('Website analysis error:', errorData, 'Status:', response.status);
+      return { 
+        success: false, 
+        error: errorData.error || `Failed to analyze website (${response.status})`
+      };
+    }
+
+    const result = await response.json();
+    if (result.success && result.data) {
+      return { 
+        success: true, 
+        description: result.data.description,
+        businessModel: result.data.businessModel,
+        productOffering: result.data.productOffering,
+        valuePropositions: result.data.valuePropositions,
+        differentiationHighlights: result.data.differentiationHighlights
+      };
+    } else {
+      return { success: false, error: 'No analysis data received' };
+    }
+  } catch (error) {
+    console.error('Failed to analyze website:', error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Failed to analyze website'
+    };
+  }
+}
+
+export async function compareBusinesses(primaryBusinessData: any, competitorData: any, userId?: string) {
+  try {
+    if (!primaryBusinessData || !competitorData) {
+      return { success: false, error: 'Both primary business and competitor data are required' };
+    }
+
+    console.log('Comparing businesses:', primaryBusinessData.name, 'vs', competitorData.name);
+
+    // If no userId is provided, try to get it from session
+    let authenticatedUserId = userId;
+    if (!authenticatedUserId) {
+      const session = await getServerSession(authOptions);
+      authenticatedUserId = session?.user?.id;
+      console.log('Got userId from session:', authenticatedUserId);
+    }
+    
+    if (!authenticatedUserId) {
+      console.error('No authenticated user ID available');
+      return { success: false, error: 'Authentication required' };
+    }
+
+    // Build API URL with absolute path to ensure it works in all environments
+    const baseUrl = process.env.NEXTAUTH_URL || process.env.VERCEL_URL || 'http://localhost:3000';
+    const apiUrl = new URL('/api/admin/compare-businesses', baseUrl).toString();
+    
+    console.log('Calling API at:', apiUrl);
+
+    // Call the compare-businesses API endpoint
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        primaryBusinessData,
+        competitorData,
+        userId: authenticatedUserId,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+      console.error('Business comparison error:', errorData, 'Status:', response.status);
+      return { 
+        success: false, 
+        error: errorData.error || `Failed to compare businesses (${response.status})`
+      };
+    }
+
+    const result = await response.json();
+    if (result.success && result.data) {
+      return { 
+        success: true, 
+        strengthsVsPrimary: result.data.strengthsVsPrimary || [],
+        weaknessesVsPrimary: result.data.weaknessesVsPrimary || [],
+        keyDifferences: result.data.keyDifferences || []
+      };
+    } else {
+      return { success: false, error: 'No comparison data received' };
+    }
+  } catch (error) {
+    console.error('Failed to compare businesses:', error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Failed to compare businesses'
+    };
   }
 } 

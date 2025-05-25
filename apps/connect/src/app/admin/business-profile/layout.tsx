@@ -6,7 +6,8 @@ import { cn } from '../../../packages/utils';
 
 const subNavigation = [
   { name: 'Profile', href: '/admin/business-profile' },
-  { name: 'Goals & KPIs', href: '/admin/business-profile/goals' }
+  { name: 'Goals & KPIs', href: '/admin/business-profile/goals' },
+  { name: 'Competition', href: '/admin/business-profile/competition' }
 ];
 
 export default function BusinessProfileLayout({
