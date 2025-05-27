@@ -85,6 +85,9 @@ export default function ToolAccessRequests() {
     
     console.log('[DEBUG] Saving Leadsie Connection ID:', leadsieConnectionId);
     setIsSavingUrl(true);
+    setError(null); // Clear any previous errors
+    setUrlSaved(false); // Reset success state
+    
     try {
       // Construct the full Leadsie URL
       const fullLeadsieUrl = `https://app.leadsie.com/connect/request/${leadsieConnectionId.trim()}`;
@@ -100,19 +103,30 @@ export default function ToolAccessRequests() {
       
       console.log('[DEBUG] Save Leadsie URL response status:', response.status);
       
+      // Always parse the response regardless of status code
+      const data = await response.json().catch(err => {
+        console.error('[DEBUG] Error parsing response:', err);
+        return { error: 'Failed to parse server response' };
+      });
+      
       if (response.ok) {
-        const data = await response.json();
         console.log('[DEBUG] Save Leadsie URL response data:', data);
         setUrlSaved(true);
         setTimeout(() => setUrlSaved(false), 3000);
       } else {
-        const data = await response.json();
+        // Extract detailed error information
+        const errorMessage = data.error || 'Failed to save Leadsie URL';
+        const errorDetails = data.details ? `: ${data.details}` : '';
+        const fullError = `${errorMessage}${errorDetails}`;
+        
         console.error('[DEBUG] Failed to save Leadsie URL:', data);
-        setError(data.error || 'Failed to save Leadsie URL');
+        setError(fullError);
       }
     } catch (error) {
+      // Handle network errors or other exceptions
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       console.error('[DEBUG] Error saving Leadsie URL:', error);
-      setError('An unexpected error occurred');
+      setError(`An unexpected error occurred: ${errorMessage}`);
     } finally {
       setIsSavingUrl(false);
     }
@@ -160,6 +174,11 @@ export default function ToolAccessRequests() {
         </div>
         {urlSaved && (
           <p className="mt-2 text-sm text-green-600">Connection ID saved successfully!</p>
+        )}
+        {error && (
+          <p className="mt-2 text-sm text-red-600 bg-red-50 p-2 rounded border border-red-200">
+            {error}
+          </p>
         )}
       </div>
 
