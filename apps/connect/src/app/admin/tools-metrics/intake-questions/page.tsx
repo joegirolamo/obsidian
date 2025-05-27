@@ -91,14 +91,15 @@ export default function IntakeQuestionsPage() {
     if (!newCustomQuestion.trim()) return;
 
     try {
-      // Get the user's business ID first
-      const userResponse = await fetch('/api/user');
-      if (!userResponse.ok) throw new Error('Failed to fetch user data');
-      const userData = await userResponse.json();
+      // Get the businessId from URL searchParams
+      const urlParams = new URLSearchParams(window.location.search);
+      const businessId = urlParams.get('businessId');
       
-      if (!userData.managedBusinesses?.[0]?.id) {
-        throw new Error('No business found');
+      if (!businessId) {
+        console.error('No businessId found in URL');
       }
+      
+      console.log(`Adding custom question for business: ${businessId || 'not specified'}`);
 
       const response = await fetch('/api/intake-questions', {
         method: 'POST',
@@ -110,12 +111,16 @@ export default function IntakeQuestionsPage() {
           type: newCustomQuestionType,
           options: [],
           area: newCustomQuestionCategory,
-          businessId: userData.managedBusinesses[0].id,
+          businessId: businessId, // This will be null if not in URL, which is fine with our updated API
           isActive: true,
         }),
       });
 
-      if (!response.ok) throw new Error('Failed to create question');
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Failed to create question:', errorData);
+        throw new Error(errorData.error || 'Failed to create question');
+      }
 
       const newQuestion = await response.json();
       setSelectedQuestions([...selectedQuestions, {
@@ -132,6 +137,7 @@ export default function IntakeQuestionsPage() {
       setIsAddingCustomQuestion(false);
     } catch (error) {
       console.error('Error creating question:', error);
+      alert('Failed to create question. Please try again.');
     }
   };
 
@@ -155,7 +161,9 @@ export default function IntakeQuestionsPage() {
         });
 
         if (!response.ok) {
-          throw new Error('Failed to update question');
+          const errorData = await response.json();
+          console.error('Failed to update question:', errorData);
+          throw new Error(errorData.error || 'Failed to update question');
         }
 
         const updatedQuestion = await response.json();
@@ -169,11 +177,22 @@ export default function IntakeQuestionsPage() {
         }
     } else {
         // Handle template question toggle
+        // Get the businessId from URL searchParams
+        const urlParams = new URLSearchParams(window.location.search);
+        const businessId = urlParams.get('businessId');
+        
+        if (!businessId) {
+          console.log('No businessId found in URL when adding template question');
+        }
+        
+        console.log(`Adding template question for business: ${businessId || 'not specified'}`);
+        
         const newQuestion = {
           question: question.question,
           type: question.type,
           options: question.options,
           area: question.area,
+          businessId: businessId, // Include businessId from URL
           order: selectedQuestions.length,
           isActive: true
         };
@@ -185,7 +204,9 @@ export default function IntakeQuestionsPage() {
         });
 
         if (!response.ok) {
-          throw new Error('Failed to add question');
+          const errorData = await response.json();
+          console.error('Failed to add question:', errorData);
+          throw new Error(errorData.error || 'Failed to add question');
         }
 
         const addedQuestion = await response.json();
@@ -193,6 +214,7 @@ export default function IntakeQuestionsPage() {
       }
     } catch (error) {
       console.error('Error toggling question:', error);
+      alert('Failed to update question. Please try again.');
     }
   };
 

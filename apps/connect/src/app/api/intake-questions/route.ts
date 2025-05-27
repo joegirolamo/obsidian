@@ -78,23 +78,47 @@ export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
+      console.error('[Intake POST] Unauthorized request - no user session');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get the user's business ID
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { managedBusinesses: { select: { id: true } } }
-    });
+    // Parse the incoming data first
+    const data = await request.json();
+    console.log('[Intake POST] Creating question with data:', data);
+    const { question, type, options, order, area, businessId } = data;
 
-    if (!user?.managedBusinesses?.[0]?.id) {
-      return NextResponse.json({ error: 'No business found' }, { status: 404 });
+    // Validate required fields
+    if (!question) {
+      console.error('[Intake POST] Missing required field: question');
+      return NextResponse.json({ error: 'Question is required' }, { status: 400 });
     }
 
-    const data = await request.json();
-    console.log('Creating question with data:', data);
-    const { question, type, options, order, area } = data;
+    // If businessId is provided in the request, use it
+    let targetBusinessId = businessId;
 
+    // If no businessId provided, get the user's businesses
+    if (!targetBusinessId) {
+      console.log('[Intake POST] No businessId provided, looking up user businesses');
+      
+      // Get any business the user has access to (open workspace model)
+      const businesses = await prisma.business.findMany({
+        take: 1,
+        orderBy: {
+          createdAt: 'desc'
+        }
+      });
+
+      if (!businesses || businesses.length === 0) {
+        console.error('[Intake POST] No businesses found for user');
+        return NextResponse.json({ error: 'No business found' }, { status: 404 });
+      }
+
+      targetBusinessId = businesses[0].id;
+    }
+
+    console.log(`[Intake POST] Using businessId: ${targetBusinessId}`);
+
+    // Create the new question
     const newQuestion = await prisma.intakeQuestion.create({
       data: {
         question,
@@ -102,16 +126,19 @@ export async function POST(request: Request) {
         options: options || [],
         order: order || 0,
         area: area || 'Other',
-        businessId: user.managedBusinesses[0].id,
+        businessId: targetBusinessId,
         isActive: true,
       },
     });
 
-    console.log('Created question:', newQuestion);
+    console.log('[Intake POST] Created question:', newQuestion);
     return NextResponse.json(newQuestion);
   } catch (error) {
-    console.error('Error creating intake question:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    console.error('[Intake POST] Error creating intake question:', error);
+    return NextResponse.json({ 
+      error: 'Internal Server Error',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 });
   }
 }
 
@@ -120,28 +147,46 @@ export async function PATCH(request: Request) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
+      console.error('[Intake PATCH] Unauthorized request - no user session');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get the user's business ID
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { managedBusinesses: { select: { id: true } } }
-    });
-
-    if (!user?.managedBusinesses?.[0]?.id) {
-      return NextResponse.json({ error: 'No business found' }, { status: 404 });
-    }
-
     const data = await request.json();
-    const { id, question, type, options, order, isActive, area } = data;
+    console.log('[Intake PATCH] Updating question with data:', data);
+    const { id, question, type, options, order, isActive, area, businessId } = data;
 
     // If no ID is provided, create a new question
     if (!id) {
       if (!question) {
+        console.error('[Intake PATCH] Missing required field: question');
         return NextResponse.json({ error: 'Question field is required' }, { status: 400 });
       }
 
+      // If businessId is provided in the request, use it
+      let targetBusinessId = businessId;
+
+      // If no businessId provided, get the user's businesses
+      if (!targetBusinessId) {
+        console.log('[Intake PATCH] No businessId provided, looking up user businesses');
+        
+        // Get any business the user has access to (open workspace model)
+        const businesses = await prisma.business.findMany({
+          take: 1,
+          orderBy: {
+            createdAt: 'desc'
+          }
+        });
+
+        if (!businesses || businesses.length === 0) {
+          console.error('[Intake PATCH] No businesses found for user');
+          return NextResponse.json({ error: 'No business found' }, { status: 404 });
+        }
+
+        targetBusinessId = businesses[0].id;
+      }
+
+      console.log(`[Intake PATCH] Creating new question for businessId: ${targetBusinessId}`);
+      
       const newQuestion = await prisma.intakeQuestion.create({
         data: {
           question,
@@ -150,9 +195,11 @@ export async function PATCH(request: Request) {
           order: order || 0,
           area: area || 'Other',
           isActive: true,
-          businessId: user.managedBusinesses[0].id,
+          businessId: targetBusinessId,
         },
       });
+      
+      console.log('[Intake PATCH] Created new question:', newQuestion);
       return NextResponse.json(newQuestion);
     }
 
@@ -165,17 +212,21 @@ export async function PATCH(request: Request) {
     if (order !== undefined) updateData.order = order;
     if (area) updateData.area = area;
 
+    console.log(`[Intake PATCH] Updating question ${id} with data:`, updateData);
+
+    // Remove the business filter to support the shared workspace model
     const updatedQuestion = await prisma.intakeQuestion.update({
-      where: {
-        id,
-        businessId: user.managedBusinesses[0].id, // Ensure the question belongs to the user's business
-      },
+      where: { id },
       data: updateData,
     });
 
+    console.log('[Intake PATCH] Updated question:', updatedQuestion);
     return NextResponse.json(updatedQuestion);
   } catch (error) {
-    console.error('Error updating intake question:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    console.error('[Intake PATCH] Error updating intake question:', error);
+    return NextResponse.json({ 
+      error: 'Internal Server Error',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 });
   }
 } 
