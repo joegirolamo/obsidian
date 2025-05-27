@@ -671,4 +671,85 @@ export async function deleteKPIAction(kpiId: string) {
     console.error('Error deleting KPI:', error);
     return { success: false, error: 'Failed to delete KPI' };
   }
+}
+
+/**
+ * Grants all authenticated users access to all businesses
+ * This makes every user able to view any business in the system
+ */
+export async function grantAllUsersAccessToAllBusinesses() {
+  try {
+    console.log('Starting process to grant all users access to all businesses');
+    
+    // Get all users
+    const users = await prisma.user.findMany({
+      select: {
+        id: true,
+        email: true,
+        role: true
+      }
+    });
+    
+    console.log(`Found ${users.length} users`);
+    
+    // Get all businesses
+    const businesses = await prisma.business.findMany({
+      select: {
+        id: true,
+        name: true
+      }
+    });
+    
+    console.log(`Found ${businesses.length} businesses`);
+    
+    let created = 0;
+    let skipped = 0;
+    
+    // For each user, ensure they have access to each business
+    for (const user of users) {
+      for (const business of businesses) {
+        // Check if client portal already exists
+        const existingClientPortal = await prisma.clientPortal.findFirst({
+          where: {
+            businessId: business.id,
+            clientId: user.id
+          }
+        });
+        
+        // Create client portal if it doesn't exist
+        if (!existingClientPortal) {
+          await prisma.clientPortal.create({
+            data: {
+              businessId: business.id,
+              clientId: user.id,
+              isActive: true
+            }
+          });
+          created++;
+          console.log(`Created access for user ${user.email} to business ${business.name}`);
+        } else {
+          skipped++;
+          console.log(`Access already exists for user ${user.email} to business ${business.name}`);
+        }
+      }
+    }
+    
+    console.log(`Access grants completed: ${created} created, ${skipped} already existed`);
+    
+    // Invalidate relevant paths
+    revalidatePath('/admin');
+    revalidatePath('/admin/business-profile');
+    revalidatePath('/portal');
+    
+    return { 
+      success: true, 
+      message: `Successfully processed access grants: ${created} new connections created, ${skipped} connections already existed` 
+    };
+  } catch (error) {
+    console.error('Error granting users access to businesses:', error);
+    return { 
+      success: false, 
+      error: 'Failed to grant users access to businesses' 
+    };
+  }
 } 

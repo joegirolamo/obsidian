@@ -1,18 +1,18 @@
 import { PrismaClient } from "@prisma/client";
 
-// Extend PrismaClient to include all models
-export interface ExtendedPrismaClient extends PrismaClient {
-  aIConfiguration: any;
+// Define the global prisma instance
+declare global {
+  var prisma: PrismaClient | undefined;
 }
 
-const globalForPrisma = globalThis as unknown as {
-  prisma: ExtendedPrismaClient | undefined;
-};
+// PrismaClient is attached to the `global` object in development to prevent
+// exhausting your database connection limit.
+// Learn more: https://pris.ly/d/help/next-js-best-practices
 
 export const prisma =
-  globalForPrisma.prisma ??
-  (new PrismaClient({
-    log: process.env.NODE_ENV === "production" ? ["error"] : ["error", "warn"],
-  }) as ExtendedPrismaClient);
+  global.prisma ||
+  new PrismaClient({
+    log: ['query'],
+  });
 
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma; 
+if (process.env.NODE_ENV !== 'production') global.prisma = prisma; 

@@ -19,6 +19,8 @@ import {
   updateScorecardHighlight 
 } from '@/app/actions/scorecard-update';
 import { useSearchParams } from 'next/navigation';
+import { Metric } from '@prisma/client';
+import ReportManagement from './ReportManagement';
 
 interface Highlight {
   id: string;
@@ -69,6 +71,13 @@ export default function Scorecard() {
   const [isSavingScore, setIsSavingScore] = useState<string | null>(null); // Store bucket name being saved
   const [isRunningAudit, setIsRunningAudit] = useState<string | null>(null); // Store bucket name being audited
   const [isRunningFullAudit, setIsRunningFullAudit] = useState(false);
+  
+  // New state for adding metric signals
+  const [isAddingMetricSignal, setIsAddingMetricSignal] = useState<string | null>(null);
+  const [newMetricSignal, setNewMetricSignal] = useState({
+    name: '',
+    value: ''
+  });
   
   const searchParams = useSearchParams();
   const businessId = searchParams.get('businessId');
@@ -969,6 +978,91 @@ export default function Scorecard() {
     }
   };
 
+  const handleAddMetricSignal = async (bucketName: string) => {
+    if (!businessId || !newMetricSignal.name || !newMetricSignal.value) return;
+    
+    setIsSavingHighlight(true); // Reuse the same loading state
+    
+    // First update the UI optimistically
+    const newSignalObj = {
+      id: `m${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+      name: newMetricSignal.name,
+      value: newMetricSignal.value
+    };
+    
+    setBuckets(prevBuckets => 
+      prevBuckets.map(bucket => {
+        if (bucket.name === bucketName) {
+          return {
+            ...bucket,
+            data: {
+              ...bucket.data,
+              metricSignals: [
+                ...bucket.data.metricSignals,
+                newSignalObj
+              ]
+            }
+          };
+        }
+        return bucket;
+      })
+    );
+    
+    try {
+      console.log('[DEBUG] Adding metric signal to bucket:', bucketName);
+      
+      // Get the current bucket
+      const bucket = buckets.find(b => b.name === bucketName);
+      if (!bucket) throw new Error('Bucket not found');
+      
+      // Format the highlights into a description (unchanged)
+      const highlightsText = bucket.data.highlights.map(h => 
+        `- ${h.text} (${h.serviceArea})`
+      ).join('\n');
+      
+      const serviceAreasText = bucket.serviceAreas.join(', ');
+      const description = `Service Areas: ${serviceAreasText}\n\nHighlights:\n${highlightsText}`;
+      
+      // Create the highlight data structure with updated metric signals
+      const highlightsData = {
+        items: bucket.data.highlights,
+        metricSignals: [...bucket.data.metricSignals, newSignalObj],
+        score: bucket.data.score,
+        maxScore: bucket.data.maxScore,
+        serviceAreas: bucket.serviceAreas
+      };
+      
+      // Save to the database
+      const result = await updateScorecardCategory(businessId, {
+        name: bucketName,
+        score: bucket.data.score,
+        highlights: description,
+        serviceAreas: bucket.serviceAreas,
+        highlightsData
+      });
+      
+      console.log('[DEBUG] Add metric signal result:', result);
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to add metric signal');
+      }
+      
+      // Reset the form
+      setNewMetricSignal({ name: '', value: '' });
+      setIsAddingMetricSignal(null);
+      
+      // After server response, reload data to ensure we're showing the latest
+      await reloadData();
+    } catch (error) {
+      console.error('Error adding metric signal:', error);
+      
+      // Reload data on error to ensure UI is in sync with server
+      await reloadData();
+    } finally {
+      setIsSavingHighlight(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -1320,9 +1414,67 @@ export default function Scorecard() {
                 )}
                 
                 {/* Metric Signals Section */}
-                {bucket.data.metricSignals.length > 0 && (
+                {(bucket.data.metricSignals.length > 0 || isAddingMetricSignal === bucket.name) && (
                   <div className="mt-6">
-                    <h3 className="font-medium mb-2">Metric Signals</h3>
+                    <div className="flex justify-between items-center mb-2">
+                      <h3 className="font-medium">Metric Signals</h3>
+                    </div>
+                    
+                    {isAddingMetricSignal === bucket.name && (
+                      <div className="mb-4 p-3 bg-gray-50 rounded-md border border-gray-200">
+                        <div className="flex flex-col space-y-2">
+                          <div className="flex items-center space-x-2">
+                            <label className="text-sm font-medium">Name:</label>
+                            <input 
+                              type="text"
+                              value={newMetricSignal.name}
+                              onChange={(e) => setNewMetricSignal({...newMetricSignal, name: e.target.value})}
+                              placeholder="Metric name (e.g. Bounce Rate)"
+                              className="p-2 bg-white border border-gray-200 rounded flex-grow"
+                            />
+                          </div>
+                          
+                          <div className="flex items-center space-x-2">
+                            <label className="text-sm font-medium">Value:</label>
+                            <input 
+                              type="text"
+                              value={newMetricSignal.value}
+                              onChange={(e) => setNewMetricSignal({...newMetricSignal, value: e.target.value})}
+                              placeholder="Metric value (e.g. 45% or $25)"
+                              className="p-2 bg-white border border-gray-200 rounded flex-grow"
+                            />
+                          </div>
+                        </div>
+                        <div className="flex justify-end space-x-2 mt-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => {
+                              setNewMetricSignal({ name: '', value: '' });
+                              setIsAddingMetricSignal(null);
+                            }}
+                          >
+                            Cancel
+                          </Button>
+                          <Button 
+                            variant="primary" 
+                            size="sm"
+                            onClick={() => handleAddMetricSignal(bucket.name)}
+                            disabled={!newMetricSignal.name || !newMetricSignal.value || isSavingHighlight}
+                          >
+                            {isSavingHighlight ? (
+                              <>
+                                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                                Saving...
+                              </>
+                            ) : (
+                              'Add'
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                    
                     <div className="flex flex-wrap gap-2">
                       {bucket.data.metricSignals.map((signal) => (
                         <div
@@ -1339,11 +1491,47 @@ export default function Scorecard() {
                           <span className="ml-1 text-xs text-black font-bold">{signal.value}</span>
                         </div>
                       ))}
+                      
+                      {isAddingMetricSignal !== bucket.name && (
+                        <button
+                          onClick={() => setIsAddingMetricSignal(bucket.name)}
+                          className="h-6 w-6 rounded-full bg-gray-50 text-gray-400 flex items-center justify-center hover:bg-gray-100 hover:text-gray-500 transition-colors"
+                          title="Add metric signal"
+                        >
+                          <PlusCircle className="h-3.5 w-3.5" />
+                        </button>
+                      )}
                     </div>
+                  </div>
+                )}
+                
+                {/* Show just the add button if no metrics exist yet */}
+                {bucket.data.metricSignals.length === 0 && isAddingMetricSignal !== bucket.name && (
+                  <div className="mt-6">
+                    <div className="flex justify-between items-center mb-2">
+                      <h3 className="font-medium">Metric Signals</h3>
+                    </div>
+                    <button
+                      onClick={() => setIsAddingMetricSignal(bucket.name)}
+                      className="h-6 w-6 rounded-full bg-gray-50 text-gray-400 flex items-center justify-center hover:bg-gray-100 hover:text-gray-500 transition-colors"
+                      title="Add metric signal"
+                    >
+                      <PlusCircle className="h-3.5 w-3.5" />
+                    </button>
                   </div>
                 )}
               </div>
             </div>
+
+            {/* Add the Report Management section */}
+            {businessId && (
+              <div className="mt-8 border-t border-gray-200 pt-6">
+                <ReportManagement 
+                  bucket={bucket.name as 'Foundation' | 'Acquisition' | 'Conversion' | 'Retention'} 
+                  businessId={businessId}
+                />
+              </div>
+            )}
           </div>
         ))}
       </div>
