@@ -1,15 +1,15 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Switch } from '@headlessui/react';
-import { generateNewAccessCode, createBusiness, getBusinessByAdminId, getBusinessById, updateBusinessDetails, updateBusinessConnections, getBusinessAnalysis } from '@/app/actions/business';
+import { generateNewAccessCode, createBusiness, getBusinessByAdminId, getBusinessById, updateBusinessDetails, updateBusinessConnections, getBusinessAnalysis, deleteBusiness } from '@/app/actions/business';
 import EditBusinessModal from '@/components/EditBusinessModal';
 import EditMetricModal from '@/components/EditMetricModal';
 import { useSession } from 'next-auth/react';
 import { MetricType } from '@prisma/client';
 import { saveMetricAction, updateMetricAction, deleteMetricAction, createDefaultMetricsAction, createDefaultToolsAction, getBusinessMetricsAction, getBusinessToolsAction, updateToolRequest, deleteAllToolsAction } from '@/app/actions/serverActions';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, AlertTriangle } from 'lucide-react';
 import Properties from '@/components/admin/Properties';
 import WebsiteAnalyzer from '@/components/WebsiteAnalyzer';
 import BusinessAnalysisDetails from '@/components/BusinessAnalysisDetails';
@@ -44,6 +44,9 @@ const BusinessProfilePage = () => {
   const [analysisData, setAnalysisData] = useState<WebsiteAnalysisData | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const urlChecks = useRef(0);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const [businessDetails, setBusinessDetails] = useState<BusinessDetails>({
     name: "My Business",
@@ -264,6 +267,31 @@ const BusinessProfilePage = () => {
     }
   };
 
+  const handleDeleteWorkspace = async () => {
+    if (!businessId) return;
+
+    setIsDeleting(true);
+    setDeleteError(null);
+
+    try {
+      const result = await deleteBusiness(businessId);
+      
+      if (result.success) {
+        // Redirect to admin page
+        router.push('/admin');
+      } else {
+        setDeleteError(result.error || 'Failed to delete workspace');
+        setShowDeleteConfirm(false);
+        setIsDeleting(false);
+      }
+    } catch (error) {
+      console.error('Error deleting workspace:', error);
+      setDeleteError('An unexpected error occurred');
+      setShowDeleteConfirm(false);
+      setIsDeleting(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -414,6 +442,66 @@ const BusinessProfilePage = () => {
           onAdd={handleAddProperty}
           onRemove={handleRemoveProperty}
         />
+      </div>
+
+      {/* Danger Zone */}
+      <div className="mt-12 pt-8">
+        <div className="rounded-md bg-white border border-red-200 p-6">
+          <div className="flex items-start">
+            <div className="flex-shrink-0">
+              <AlertTriangle className="h-5 w-5 text-red-400" aria-hidden="true" />
+            </div>
+            <div className="ml-3">
+              <h3 className="text-lg font-medium text-red-800">Danger Zone</h3>
+              
+              {deleteError && (
+                <div className="mt-2 text-sm text-red-700 bg-red-100 p-3 rounded-md">
+                  {deleteError}
+                </div>
+              )}
+              
+              <div className="mt-4">
+                <p className="text-sm text-red-700 mb-4">
+                  Permanently delete this workspace and all its data. This action cannot be undone.
+                </p>
+                
+                {!showDeleteConfirm ? (
+                  <button
+                    type="button"
+                    onClick={() => setShowDeleteConfirm(true)}
+                    className="inline-flex items-center px-4 py-2 border border-red-600 text-sm font-medium rounded-md text-red-600 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                  >
+                    Delete Workspace
+                  </button>
+                ) : (
+                  <div className="flex flex-col space-y-3">
+                    <p className="text-sm font-medium text-red-800">
+                      Are you sure you want to delete "{businessDetails.name}"?
+                    </p>
+                    <div className="flex space-x-3">
+                      <button
+                        type="button"
+                        disabled={isDeleting}
+                        onClick={handleDeleteWorkspace}
+                        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                      >
+                        {isDeleting ? 'Deleting...' : 'Yes, Delete Workspace'}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={isDeleting}
+                        onClick={() => setShowDeleteConfirm(false)}
+                        className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       {showEditModal && (

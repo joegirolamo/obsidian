@@ -752,4 +752,55 @@ export async function grantAllUsersAccessToAllBusinesses() {
       error: 'Failed to grant users access to businesses' 
     };
   }
+}
+
+/**
+ * Add a user to all existing businesses
+ * This ensures users show up in the BusinessUsers relation for the open workspace model
+ */
+export async function addUserToAllBusinesses(userId: string) {
+  try {
+    console.log(`Adding user ${userId} to all businesses (open workspace model)`);
+    
+    // Get all businesses where the user is not already a member
+    const businesses = await prisma.business.findMany({
+      where: {
+        users: {
+          none: {
+            id: userId
+          }
+        }
+      },
+      select: {
+        id: true,
+        name: true
+      }
+    });
+    
+    if (businesses.length === 0) {
+      console.log(`User ${userId} is already a member of all businesses`);
+      return { success: true, message: 'User already in all businesses' };
+    }
+    
+    console.log(`Found ${businesses.length} businesses to add user to`);
+    
+    // Add user to all businesses at once (more efficient)
+    for (const business of businesses) {
+      await prisma.business.update({
+        where: { id: business.id },
+        data: {
+          users: {
+            connect: { id: userId }
+          }
+        }
+      });
+      console.log(`Added user ${userId} to business ${business.name}`);
+    }
+    
+    console.log(`Successfully added user ${userId} to ${businesses.length} businesses`);
+    return { success: true, message: `Added user to ${businesses.length} businesses` };
+  } catch (error) {
+    console.error(`Failed to add user ${userId} to all businesses:`, error);
+    return { success: false, error: 'Failed to add user to all businesses' };
+  }
 } 

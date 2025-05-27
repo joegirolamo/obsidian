@@ -191,10 +191,13 @@ export async function createBusiness(
 
 export async function getBusinessByAdminId(adminId: string) {
   try {
+    // Get all businesses (open workspace model)
+    // The function name is kept for backward compatibility
     const businesses = await prisma.business.findMany({
-      where: { adminId },
       orderBy: { createdAt: 'desc' },
     });
+    
+    console.log(`Found ${businesses.length} total businesses accessible to user ${adminId}`);
     
     return { success: true, businesses };
   } catch (error) {
@@ -448,5 +451,122 @@ export async function compareBusinesses(primaryBusinessData: any, competitorData
       success: false, 
       error: error instanceof Error ? error.message : 'Failed to compare businesses'
     };
+  }
+}
+
+/**
+ * Delete a business and all related data
+ */
+export async function deleteBusiness(businessId: string) {
+  try {
+    console.log(`Deleting business with ID: ${businessId}`);
+    
+    // First check if the business exists
+    const business = await prisma.business.findUnique({
+      where: { id: businessId },
+      select: { name: true }
+    });
+
+    if (!business) {
+      console.error('Business not found:', businessId);
+      return { success: false, error: 'Business not found' };
+    }
+
+    // Using transaction to ensure all operations succeed or fail together
+    await prisma.$transaction(async (tx) => {
+      // Delete reports
+      const prismaAny = prisma as any;
+      
+      // Try to delete reports using Report model (accounting for case sensitivity issues)
+      try {
+        if (typeof prismaAny.Report !== 'undefined') {
+          await prismaAny.Report.deleteMany({
+            where: { businessId }
+          });
+        }
+      } catch (e) {
+        console.warn('Error deleting reports with Report model:', e);
+        // Try with lowercase 'report'
+        if (typeof prismaAny.report !== 'undefined') {
+          await prismaAny.report.deleteMany({
+            where: { businessId }
+          });
+        }
+      }
+      
+      // Delete Scorecards - this was missing in the original function
+      try {
+        await tx.scorecard.deleteMany({
+          where: { businessId }
+        });
+      } catch (e) {
+        console.warn('Error deleting scorecards with scorecard model:', e);
+        // Try with capitalized 'Scorecard'
+        if (typeof prismaAny.Scorecard !== 'undefined') {
+          await prismaAny.Scorecard.deleteMany({
+            where: { businessId }
+          });
+        }
+      }
+      
+      // Delete KPIs
+      await tx.kPI.deleteMany({
+        where: { businessId }
+      });
+      
+      // Delete goals
+      await tx.goal.deleteMany({
+        where: { businessId }
+      });
+      
+      // Delete tools (first delete related tool access)
+      await tx.toolAccess.deleteMany({
+        where: {
+          tool: {
+            businessId
+          }
+        }
+      });
+      
+      await tx.tool.deleteMany({
+        where: { businessId }
+      });
+      
+      // Delete metrics
+      await tx.metric.deleteMany({
+        where: { businessId }
+      });
+      
+      // Delete opportunities
+      await tx.opportunity.deleteMany({
+        where: { businessId }
+      });
+      
+      // Delete client portals
+      await tx.clientPortal.deleteMany({
+        where: { businessId }
+      });
+      
+      // Delete intake questions
+      await tx.intakeQuestion.deleteMany({
+        where: { businessId }
+      });
+      
+      // Delete business itself
+      await tx.business.delete({
+        where: { id: businessId }
+      });
+    });
+    
+    console.log(`Successfully deleted business: ${business.name}`);
+    
+    // Revalidate paths
+    revalidatePath('/admin');
+    revalidatePath('/admin/business-profile');
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Failed to delete business:', error);
+    return { success: false, error: 'Failed to delete business. There may be related data that cannot be deleted.' };
   }
 } 
