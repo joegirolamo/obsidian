@@ -46,6 +46,8 @@ export default function SettingsPage() {
     isActive: true
   });
   const [aiConfigurations, setAIConfigurations] = useState<any[]>([]);
+  const [aiConfigError, setAIConfigError] = useState<string | null>(null);
+  const [aiConfigSuccess, setAIConfigSuccess] = useState<string | null>(null);
   
   const [tools, setTools] = useState<AgencyTool[]>([
     {
@@ -198,31 +200,28 @@ export default function SettingsPage() {
 
   const handleAIFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
+    const checked = type === 'checkbox' ? (e.target as HTMLInputElement).checked : undefined;
     
     setAIConfigForm(prev => ({
       ...prev,
-      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
+      [name]: type === 'checkbox' ? checked : value
     }));
   };
 
-  const handleSaveAIConfig = async () => {
-    if (!aiConfigForm.apiKey || !aiConfigForm.model) {
-      setError('API Key and Model are required');
-      return;
-    }
-    
-    if (!session?.user?.id) {
-      console.error('No authenticated user found');
-      setError('Authentication error: Please sign in again');
-      return;
-    }
-    
-    setIsLoading(true);
-    setError(null);
-    setSuccess(null);
+  const handleAIFormSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAIConfigError(null);
+    setAIConfigSuccess(null);
     
     try {
-      console.log('Saving AI config with session user:', session.user.id);
+      // Validate form
+      if (!aiConfigForm.provider || !aiConfigForm.apiKey || !aiConfigForm.model) {
+        setAIConfigError('All fields are required');
+        return;
+      }
+      
+      // Get the existing configuration if any
+      const existingConfig = aiConfigurations.length > 0 ? aiConfigurations[0] : null;
       
       const response = await fetch('/api/admin/ai-configuration', {
         method: 'POST',
@@ -230,47 +229,36 @@ export default function SettingsPage() {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          ...aiConfigForm,
-          id: aiConfigurations.length > 0 ? aiConfigurations[0].id : undefined
-        }),
-        credentials: 'include' // Include auth cookies in the request
+          ...(existingConfig?.id ? { id: existingConfig.id } : {}),
+          provider: aiConfigForm.provider,
+          apiKey: aiConfigForm.apiKey,
+          model: aiConfigForm.model,
+          isActive: aiConfigForm.isActive
+        })
       });
       
-      console.log('AI Config API response status:', response.status);
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Error response from AI Config API:', response.status, errorText);
-        try {
-          const errorData = JSON.parse(errorText);
-          setError(errorData.error || `Failed to save (${response.status})`);
-        } catch (e) {
-          setError(`Failed to save configuration (${response.status}): ${errorText.substring(0, 100)}`);
-        }
-        return;
-      }
-      
-      const data = await response.json();
-      
-      if (data.success) {
-        setSuccess('AI configuration saved successfully');
-        
-        // Update local state with new configuration
-        if (aiConfigurations.length === 0) {
-          setAIConfigurations([data.configuration]);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setAIConfigSuccess('AI configuration saved successfully');
+          
+          // Refresh the configurations list
+          const updatedResponse = await fetch('/api/admin/ai-configuration');
+          if (updatedResponse.ok) {
+            const updatedData = await updatedResponse.json();
+            if (updatedData.success) {
+              setAIConfigurations(updatedData.configurations || []);
+            }
+          }
         } else {
-          setAIConfigurations(prev => 
-            prev.map(c => c.id === data.configuration.id ? data.configuration : c)
-          );
+          setAIConfigError(data.error || 'Failed to save AI configuration');
         }
       } else {
-        setError(data.error || 'Failed to save AI configuration');
+        setAIConfigError('Failed to save AI configuration');
       }
     } catch (error) {
       console.error('Error saving AI configuration:', error);
-      setError('An unexpected error occurred');
-    } finally {
-      setIsLoading(false);
+      setAIConfigError('An error occurred while saving the AI configuration');
     }
   };
 
@@ -391,7 +379,7 @@ export default function SettingsPage() {
                   <Button
                     variant="primary"
                     size="sm"
-                    onClick={handleSaveAIConfig}
+                    onClick={handleAIFormSubmit}
                     disabled={isLoading}
                   >
                     {isLoading ? 'Saving...' : 'Save Configuration'}
@@ -478,6 +466,61 @@ export default function SettingsPage() {
             ))}
           </div>
         </div>
+      </div>
+
+      <div className="bg-white shadow sm:rounded-lg p-6 mb-8">
+        <h3 className="text-lg font-medium text-gray-900">AI Configuration</h3>
+        
+        {aiConfigurations.length === 0 && (
+          <div className="mt-4 bg-yellow-50 border-l-4 border-yellow-400 p-4">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-yellow-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <p className="text-sm text-yellow-700">
+                  No AI configuration found. This is required for PDF processing and insights generation. Please configure your AI settings below.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {aiConfigError && (
+          <div className="mt-4 bg-red-50 border-l-4 border-red-400 p-4">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <p className="text-sm text-red-700">{aiConfigError}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {aiConfigSuccess && (
+          <div className="mt-4 bg-green-50 border-l-4 border-green-400 p-4">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-green-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <p className="text-sm text-green-700">{aiConfigSuccess}</p>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        <form onSubmit={handleAIFormSubmit} className="mt-5 space-y-4">
+          {/* ... existing code ... */}
+        </form>
       </div>
     </div>
   );

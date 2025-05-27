@@ -1,8 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Upload, FileText, Check, AlertTriangle, Calendar, Clock, ChevronDown, ChevronUp, X } from 'lucide-react';
 import { Button } from '@/components';
+import { ReportModal } from '@/components';
+import { Report as ReportType } from './ReportModal';
 
 type AuditType = {
   id: string;
@@ -15,18 +17,8 @@ type AuditType = {
   lastUpdated?: Date;
 };
 
-type Report = {
-  id: string;
-  auditTypeId: string;
-  businessId: string;
-  score: number;
-  status: 'draft' | 'published';
-  findings: any[];
-  metrics: Record<string, any>;
-  createdAt: Date;
-  updatedAt: Date;
-  importSource: 'pdf' | 'api' | 'manual';
-};
+// Use the Report type from ReportModal
+type Report = ReportType;
 
 // Predefined audit types for each bucket
 const AUDIT_TYPES: AuditType[] = [
@@ -181,36 +173,86 @@ export default function ReportManagement({ bucket, businessId, onReportUpdated }
   const [file, setFile] = useState<File | null>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isAIConfigured, setIsAIConfigured] = useState(false);
+  const [aiConfigError, setAIConfigError] = useState<string | null>(null);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [selectedReport, setSelectedReport] = useState<Report | null>(null);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  
+  // Check if AI is configured
+  useEffect(() => {
+    async function checkAIConfiguration() {
+      try {
+        const response = await fetch('/api/admin/ai-configuration');
+        
+        if (response.ok) {
+          const data = await response.json();
+          setIsAIConfigured(data.configurations && data.configurations.length > 0);
+        } else {
+          setIsAIConfigured(false);
+          setAIConfigError('Could not verify AI configuration status');
+        }
+      } catch (error) {
+        console.error('Error checking AI configuration:', error);
+        setIsAIConfigured(false);
+        setAIConfigError('Error checking AI configuration status');
+      }
+    }
+    
+    checkAIConfiguration();
+  }, []);
   
   // Filter audit types for the current bucket
   const bucketAuditTypes = AUDIT_TYPES.filter(audit => audit.bucket === bucket);
   
+  // Define fetchReports function that can be called from multiple places
+  const fetchReports = useCallback(async () => {
+    if (!businessId) return;
+    
+    setIsLoading(true);
+    setFetchError(null);
+    
+    try {
+      const response = await fetch(`/api/business/${businessId}/reports?bucket=${bucket}`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        
+        // Ensure we have an array (even if empty)
+        if (Array.isArray(data.reports)) {
+          setReports(data.reports);
+        } else {
+          console.warn('API returned non-array reports data, using empty array instead');
+          setReports([]);
+        }
+      } else {
+        console.error('Error fetching reports:', response.status);
+        
+        // Only show alert for actual server errors, not for 404 (which could just mean no reports yet)
+        if (response.status >= 500) {
+          // For server errors, show a small warning but continue
+          console.warn(`Could not fetch reports (${response.status}). Using empty list.`);
+          setFetchError(`Unable to load reports (Error ${response.status})`);
+        }
+        
+        // Either way, set an empty reports array
+        setReports([]);
+      }
+    } catch (error) {
+      console.error('Error fetching reports:', error);
+      // Set error message but use empty list
+      setFetchError('Unable to load reports. Please try again later.');
+      setReports([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [businessId, bucket]);
+  
   // Fetch existing reports for this business and bucket
   useEffect(() => {
-    async function fetchReports() {
-      if (!businessId) return;
-      
-      setIsLoading(true);
-      
-      try {
-        // This would be replaced with an actual API call
-        // const response = await fetch(`/api/business/${businessId}/reports?bucket=${bucket}`);
-        // const data = await response.json();
-        // if (response.ok) {
-        //   setReports(data.reports);
-        // }
-        
-        // For now, simulate empty reports
-        setReports([]);
-      } catch (error) {
-        console.error('Error fetching reports:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    }
-    
     fetchReports();
-  }, [businessId, bucket]);
+  }, [fetchReports]);
   
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -220,6 +262,12 @@ export default function ReportManagement({ bucket, businessId, onReportUpdated }
   
   const handleImportReport = async () => {
     if (!selectedAuditType) return;
+    
+    // Check if AI is configured when trying to upload PDF
+    if (importMethod === 'pdf' && !isAIConfigured) {
+      alert('AI processing is not configured. Please ask an administrator to configure AI in the settings page before uploading PDF reports.');
+      return;
+    }
     
     setIsImporting(true);
     
@@ -231,51 +279,59 @@ export default function ReportManagement({ bucket, businessId, onReportUpdated }
         formData.append('auditTypeId', selectedAuditType);
         formData.append('businessId', businessId);
         
-        // This would be replaced with an actual API call
-        // const response = await fetch('/api/reports/import', {
-        //   method: 'POST',
-        //   body: formData,
-        // });
-        // 
-        // if (response.ok) {
-        //   const newReport = await response.json();
-        //   setReports([...reports, newReport]);
-        //   if (onReportUpdated) onReportUpdated();
-        // }
+        // Make the actual API call
+        const response = await fetch('/api/reports/import', {
+          method: 'POST',
+          body: formData,
+        });
         
-        // For now, simulate success
-        alert('PDF upload simulation: Report would be processed here in the real implementation');
+        if (response.ok) {
+          const data = await response.json();
+          
+          // Check if we have a report in the response (could be a fallback report)
+          if (data.report) {
+            // Add the report to the current list instead of fetching all reports again
+            // This ensures we see the new report even if database connections fail
+            setReports(prev => [data.report, ...prev]);
+            
+            // Show success message
+            setSuccessMessage(`Successfully imported: ${data.report.title || 'new report'}`);
+            console.log('Report successfully imported:', data.report.title);
+            
+            // Clear success message after 5 seconds
+            setTimeout(() => setSuccessMessage(null), 5000);
+            
+            // Try to fetch all reports to refresh the list, but don't block on it
+            fetchReports().catch(err => console.warn('Could not refresh reports list', err));
+            
+            if (onReportUpdated) onReportUpdated();
+            
+            // Don't close the dropdown immediately
+            setFile(null);
+            // Keep dropdown open to show success
+            setTimeout(() => setIsDropdownOpen(false), 2000);
+          }
+        } else {
+          const errorData = await response.json();
+          console.error('Error importing report:', errorData);
+          alert(`Error: ${errorData.error || 'Failed to process report'}`);
+        }
       } else if (importMethod === 'api') {
-        // This would be replaced with an actual API call
-        // const response = await fetch('/api/reports/import-from-api', {
-        //   method: 'POST',
-        //   headers: {
-        //     'Content-Type': 'application/json',
-        //   },
-        //   body: JSON.stringify({
-        //     auditTypeId: selectedAuditType,
-        //     businessId: businessId,
-        //   }),
-        // });
-        // 
-        // if (response.ok) {
-        //   const newReport = await response.json();
-        //   setReports([...reports, newReport]);
-        //   if (onReportUpdated) onReportUpdated();
-        // }
-        
-        // For now, simulate success
+        // API connection implementation...
         alert('API connection simulation: Report would be fetched from the API here in the real implementation');
       } else if (importMethod === 'manual') {
-        // Navigate to manual data entry form (would be implemented separately)
+        // Manual entry implementation...
         alert('Manual entry simulation: You would be redirected to a data entry form in the real implementation');
       }
     } catch (error) {
       console.error('Error importing report:', error);
+      if (error instanceof Error) {
+        alert(`Error: ${error.message}`);
+      } else {
+        alert('An unexpected error occurred');
+      }
     } finally {
       setIsImporting(false);
-      setFile(null);
-      setIsDropdownOpen(false);
     }
   };
   
@@ -283,6 +339,12 @@ export default function ReportManagement({ bucket, businessId, onReportUpdated }
   const selectedAudit = selectedAuditType 
     ? AUDIT_TYPES.find(audit => audit.id === selectedAuditType) 
     : null;
+  
+  // Add this handler to open the report modal
+  const handleReportClick = (report: Report) => {
+    setSelectedReport(report);
+    setIsReportModalOpen(true);
+  };
   
   if (isLoading) {
     return (
@@ -293,7 +355,7 @@ export default function ReportManagement({ bucket, businessId, onReportUpdated }
   }
   
   return (
-    <div className="space-y-4 px-5">
+    <div className="p-5">
       <div className="flex justify-between items-center">
         <h3 className="text-base font-medium text-gray-600">Audit Reports</h3>
         <Button 
@@ -311,7 +373,24 @@ export default function ReportManagement({ bucket, businessId, onReportUpdated }
         </Button>
       </div>
       
-      {isDropdownOpen && (
+      {fetchError && (
+        <div className="mt-2 text-sm p-2 bg-red-50 border border-red-200 rounded-md text-red-700">
+          <AlertTriangle className="h-3.5 w-3.5 inline-block mr-1" />
+          {fetchError}
+        </div>
+      )}
+      
+      {successMessage && (
+        <div className="mt-2 text-sm p-2 bg-green-50 border border-green-200 rounded-md text-green-700">
+          <Check className="h-3.5 w-3.5 inline-block mr-1" />
+          {successMessage}
+        </div>
+      )}
+      
+      <div 
+        className={`overflow-hidden transition-all duration-300 ease-in-out ${isDropdownOpen ? 'max-h-[1000px] opacity-100 mt-4' : 'max-h-0 opacity-0'}`}
+        style={{ position: 'relative', zIndex: 5, transformOrigin: 'top' }}
+      >
         <div className="bg-white p-4 rounded-md border border-gray-200 shadow-sm">
           <div className="space-y-4">
             <div>
@@ -376,6 +455,14 @@ export default function ReportManagement({ bucket, businessId, onReportUpdated }
                     </button>
                   </div>
                 </div>
+                
+                {importMethod === 'pdf' && !isAIConfigured && (
+                  <div className="mb-3 p-2 bg-yellow-50 border border-yellow-200 rounded-md text-yellow-800 text-sm">
+                    <AlertTriangle className="h-4 w-4 inline-block mr-1" />
+                    AI processing is not configured. PDF reports cannot be processed automatically.
+                    {aiConfigError && <div className="mt-1 text-xs">{aiConfigError}</div>}
+                  </div>
+                )}
                 
                 {importMethod === 'pdf' && (
                   <div className="border-2 border-dashed border-gray-300 rounded-md p-4 text-center">
@@ -449,24 +536,32 @@ export default function ReportManagement({ bucket, businessId, onReportUpdated }
             )}
           </div>
         </div>
-      )}
+      </div>
+      
+      {/* Report Modal */}
+      <ReportModal
+        isOpen={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
+        report={selectedReport}
+      />
       
       {/* List of existing reports */}
-      <div className="space-y-3">
-        {reports.length > 0 && (
-          reports.map(report => {
+      {reports.length > 0 && (
+        <div className="space-y-3 mt-4">
+          {reports.map(report => {
             const auditType = AUDIT_TYPES.find(a => a.id === report.auditTypeId);
             return (
               <div 
                 key={report.id} 
-                className="p-3 bg-white border border-gray-200 rounded-md shadow-sm"
+                className="p-3 bg-white border border-gray-200 rounded-md shadow-sm cursor-pointer hover:shadow-md transition-shadow"
+                onClick={() => handleReportClick(report)}
               >
                 <div className="flex justify-between items-center">
                   <div>
-                    <h4 className="font-medium">{auditType?.name || 'Unknown Audit'}</h4>
+                    <h4 className="font-medium">{auditType?.name || report.title || 'Unknown Audit'}</h4>
                     <div className="flex items-center text-sm text-gray-500 mt-1">
                       <Calendar className="h-3.5 w-3.5 mr-1" />
-                      {new Date(report.createdAt).toLocaleDateString()}
+                      {report.createdAt ? new Date(report.createdAt).toLocaleDateString() : 'Just now'}
                       <span className="mx-2">•</span>
                       <span className={`px-2 py-0.5 rounded-full text-xs ${
                         report.status === 'published' 
@@ -475,17 +570,26 @@ export default function ReportManagement({ bucket, businessId, onReportUpdated }
                       }`}>
                         {report.status === 'published' ? 'Published' : 'Draft'}
                       </span>
+                      {report.importSource && (
+                        <>
+                          <span className="mx-2">•</span>
+                          <span className="text-xs text-gray-500">
+                            Source: {report.importSource === 'pdf' ? 'PDF Upload' : 
+                                    report.importSource === 'api' ? 'API' : 'Manual'}
+                          </span>
+                        </>
+                      )}
                     </div>
                   </div>
                   <div className="text-xl font-bold">
-                    {report.score}/100
+                    {report.score != null ? `${report.score}/100` : 'N/A'}
                   </div>
                 </div>
               </div>
             );
-          })
-        )}
-      </div>
+          })}
+        </div>
+      )}
     </div>
   );
 } 

@@ -1102,7 +1102,7 @@ export default function Scorecard() {
         </div>
       </div>
       
-      <div className="grid md:grid-cols-2 gap-6">
+      <div className="grid md:grid-cols-2 gap-6 items-start" style={{ gridAutoFlow: 'row' }}>
         {buckets.map((bucket) => (
           <div 
             key={bucket.name} 
@@ -1525,7 +1525,7 @@ export default function Scorecard() {
 
             {/* Add the Report Management section */}
             {businessId && (
-              <div className="mt-8 border-t border-gray-200 pt-6">
+              <div className="border-t border-gray-200">
                 <ReportManagement 
                   bucket={bucket.name as 'Foundation' | 'Acquisition' | 'Conversion' | 'Retention'} 
                   businessId={businessId}

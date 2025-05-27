@@ -22,4 +22,6 @@ export { default as ToolAccessRequests } from './ToolAccessRequests';
 // Uncomment these lines once index.ts files are created in these directories
 // export * from './shared';
 // export * from './admin';
-// export * from './ui'; 
+// export * from './ui';
+
+export { default as ReportModal } from './ReportModal'; 

@@ -67,7 +67,8 @@ export async function GET(request: Request) {
     }
 
     // Get all AI configurations
-    const configurations = await prisma.aIConfiguration.findMany({
+    const prismaAny = prisma as any;
+    const configurations = await prismaAny.AIConfiguration.findMany({
       orderBy: { createdAt: 'desc' }
     });
     
@@ -189,10 +190,11 @@ export async function POST(request: Request) {
     }
 
     let configuration;
+    const prismaAny = prisma as any;
 
     if (id) {
       // Update existing configuration
-      configuration = await prisma.aIConfiguration.update({
+      configuration = await prismaAny.AIConfiguration.update({
         where: { id },
         data: {
           provider,
@@ -204,7 +206,7 @@ export async function POST(request: Request) {
       });
     } else {
       // Create new configuration
-      configuration = await prisma.aIConfiguration.create({
+      configuration = await prismaAny.AIConfiguration.create({
         data: {
           provider,
           apiKey,
@@ -300,7 +302,8 @@ export async function DELETE(request: Request) {
       );
     }
 
-    await prisma.aIConfiguration.delete({
+    const prismaAny = prisma as any;
+    await prismaAny.AIConfiguration.delete({
       where: { id }
     });
 
