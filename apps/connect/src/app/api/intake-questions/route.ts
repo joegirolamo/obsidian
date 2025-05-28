@@ -2,12 +2,48 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { getToken } from 'next-auth/jwt';
 
 // GET /api/intake-questions
 export async function GET(request: Request) {
   try {
+    // Output environment variables for debugging
+    console.log('Intake Questions GET API Environment:', {
+      NODE_ENV: process.env.NODE_ENV,
+      NEXTAUTH_URL: process.env.NEXTAUTH_URL,
+      VERCEL_URL: process.env.VERCEL_URL
+    });
+
+    // First try to get session using getServerSession
     const session = await getServerSession(authOptions);
-    if (!session?.user) {
+    console.log('Intake Questions GET - Session from getServerSession:', session ? 'Found' : 'Not found');
+    
+    // If no session, try to get token directly from request
+    let userId = session?.user?.id;
+    
+    if (userId) {
+      console.log('Using session authentication with user ID:', userId);
+    } else {
+      try {
+        const token = await getToken({ 
+          req: request as any,
+          secret: process.env.NEXTAUTH_SECRET 
+        });
+        
+        console.log('Token from getToken:', token ? 'Found' : 'Not found');
+        
+        if (token) {
+          userId = token.id as string;
+          console.log('Retrieved user info from token:', { userId });
+        }
+      } catch (error) {
+        console.error('Error getting token:', error);
+      }
+    }
+    
+    // If no authentication method succeeded
+    if (!userId) {
+      console.error('Intake Questions GET - Unauthorized: No valid authentication found');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -21,7 +57,7 @@ export async function GET(request: Request) {
     const business = await prisma.business.findFirst({
       where: {
         id: businessId,
-        adminId: session.user.id
+        adminId: userId
       }
     });
 
@@ -76,9 +112,43 @@ export async function GET(request: Request) {
 // POST /api/intake-questions
 export async function POST(request: Request) {
   try {
+    // Output environment variables for debugging
+    console.log('Intake Questions POST API Environment:', {
+      NODE_ENV: process.env.NODE_ENV,
+      NEXTAUTH_URL: process.env.NEXTAUTH_URL,
+      VERCEL_URL: process.env.VERCEL_URL
+    });
+
+    // First try to get session using getServerSession
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      console.error('[Intake POST] Unauthorized request - no user session');
+    console.log('Intake Questions POST - Session from getServerSession:', session ? 'Found' : 'Not found');
+    
+    // If no session, try to get token directly from request
+    let userId = session?.user?.id;
+    
+    if (userId) {
+      console.log('Using session authentication with user ID:', userId);
+    } else {
+      try {
+        const token = await getToken({ 
+          req: request as any,
+          secret: process.env.NEXTAUTH_SECRET 
+        });
+        
+        console.log('Token from getToken:', token ? 'Found' : 'Not found');
+        
+        if (token) {
+          userId = token.id as string;
+          console.log('Retrieved user info from token:', { userId });
+        }
+      } catch (error) {
+        console.error('Error getting token:', error);
+      }
+    }
+    
+    // If no authentication method succeeded
+    if (!userId) {
+      console.error('Intake Questions POST - Unauthorized: No valid authentication found');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -145,9 +215,43 @@ export async function POST(request: Request) {
 // PATCH /api/intake-questions
 export async function PATCH(request: Request) {
   try {
+    // Output environment variables for debugging
+    console.log('Intake Questions PATCH API Environment:', {
+      NODE_ENV: process.env.NODE_ENV,
+      NEXTAUTH_URL: process.env.NEXTAUTH_URL,
+      VERCEL_URL: process.env.VERCEL_URL
+    });
+
+    // First try to get session using getServerSession
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      console.error('[Intake PATCH] Unauthorized request - no user session');
+    console.log('Intake Questions PATCH - Session from getServerSession:', session ? 'Found' : 'Not found');
+    
+    // If no session, try to get token directly from request
+    let userId = session?.user?.id;
+    
+    if (userId) {
+      console.log('Using session authentication with user ID:', userId);
+    } else {
+      try {
+        const token = await getToken({ 
+          req: request as any,
+          secret: process.env.NEXTAUTH_SECRET 
+        });
+        
+        console.log('Token from getToken:', token ? 'Found' : 'Not found');
+        
+        if (token) {
+          userId = token.id as string;
+          console.log('Retrieved user info from token:', { userId });
+        }
+      } catch (error) {
+        console.error('Error getting token:', error);
+      }
+    }
+    
+    // If no authentication method succeeded
+    if (!userId) {
+      console.error('Intake Questions PATCH - Unauthorized: No valid authentication found');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
