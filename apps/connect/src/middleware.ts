@@ -72,5 +72,12 @@ export default async function middleware(request: NextRequestWithAuth) {
 }
 
 export const config = {
-  matcher: ['/admin/:path*', '/auth/:path*', '/connect/:path*', '/api/connect/:path*', '/api/admin/:path*'],
+  matcher: [
+    '/admin/:path*', 
+    '/auth/:path*', 
+    '/connect/:path*', 
+    '/api/connect/:path*', 
+    '/api/admin/:path*',
+    '/api/intake-questions/:path*'
+  ],
 }; 

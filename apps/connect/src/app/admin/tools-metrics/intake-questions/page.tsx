@@ -51,7 +51,9 @@ export default function IntakeQuestionsPage() {
   const fetchQuestions = async () => {
     try {
       // Get the user's business ID first
-      const userResponse = await fetch('/api/user');
+      const userResponse = await fetch('/api/user', {
+        credentials: 'include', // Ensure cookies are sent with the request
+      });
       if (!userResponse.ok) throw new Error('Failed to fetch user data');
       const userData = await userResponse.json();
       
@@ -59,7 +61,9 @@ export default function IntakeQuestionsPage() {
         throw new Error('No business found');
       }
 
-      const response = await fetch(`/api/intake-questions?businessId=${userData.managedBusinesses[0].id}`);
+      const response = await fetch(`/api/intake-questions?businessId=${userData.managedBusinesses[0].id}`, {
+        credentials: 'include', // Ensure cookies are sent with the request
+      });
       if (!response.ok) throw new Error('Failed to fetch questions');
       const data = await response.json();
       
@@ -106,6 +110,7 @@ export default function IntakeQuestionsPage() {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({
           question: newCustomQuestion.trim(),
           type: newCustomQuestionType,
@@ -153,7 +158,10 @@ export default function IntakeQuestionsPage() {
         // Handle existing question toggle
         const response = await fetch('/api/intake-questions', {
           method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json' 
+          },
+          credentials: 'include',
           body: JSON.stringify({
             id: question.id,
             isActive: !question.isActive
@@ -199,7 +207,10 @@ export default function IntakeQuestionsPage() {
 
         const response = await fetch('/api/intake-questions', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json' 
+          },
+          credentials: 'include',
           body: JSON.stringify(newQuestion)
         });
 
@@ -222,6 +233,7 @@ export default function IntakeQuestionsPage() {
     try {
       const response = await fetch(`/api/intake-questions/${questionId}`, {
         method: 'DELETE',
+        credentials: 'include',
       });
 
       if (!response.ok) throw new Error('Failed to delete question');
