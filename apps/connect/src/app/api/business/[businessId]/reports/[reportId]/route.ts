@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { getToken } from 'next-auth/jwt';
 
 // Helper function to parse the businessId and reportId from URL path
 function getParams(request: NextRequest): { businessId: string | null, reportId: string | null } {
@@ -37,9 +38,36 @@ export async function DELETE(request: NextRequest) {
       });
     }
 
-    // Authenticate user
+    // First try to get session using getServerSession
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    console.log('Reports DELETE - Session from getServerSession:', session ? 'Found' : 'Not found');
+    
+    // If no session, try to get token directly from request
+    let userId = session?.user?.id;
+    
+    if (userId) {
+      console.log('Using session authentication with user ID:', userId);
+    } else {
+      try {
+        const token = await getToken({ 
+          req: request as any,
+          secret: process.env.NEXTAUTH_SECRET 
+        });
+        
+        console.log('Token from getToken:', token ? 'Found' : 'Not found');
+        
+        if (token) {
+          userId = token.id as string;
+          console.log('Retrieved user info from token:', { userId });
+        }
+      } catch (error) {
+        console.error('Error getting token:', error);
+      }
+    }
+    
+    // If no authentication method succeeded
+    if (!userId) {
+      console.error('Reports DELETE - Unauthorized: No valid authentication found');
       return new Response(JSON.stringify({ error: 'Authentication required' }), {
         status: 401,
         headers: { 'Content-Type': 'application/json' },
