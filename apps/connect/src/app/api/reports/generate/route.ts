@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { processWithAI, parseAIResponse } from '@/lib/ai';
 import { getAuditDefinition } from '@/lib/reportDefinitions';
+import { getToken } from 'next-auth/jwt';
 
 /**
  * Processes files uploaded with the report generation request
@@ -427,8 +428,44 @@ function determineRandomEffort(): 'low' | 'medium' | 'high' {
 
 export async function POST(request: NextRequest) {
   try {
+    // Output environment variables for debugging
+    console.log('Reports Generate API Environment:', {
+      NODE_ENV: process.env.NODE_ENV,
+      NEXTAUTH_URL: process.env.NEXTAUTH_URL,
+      VERCEL_URL: process.env.VERCEL_URL,
+      VERCEL_ENV: process.env.VERCEL_ENV
+    });
+    
+    // First try to get session using getServerSession
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    console.log('Reports Generate API - Session from getServerSession:', session ? 'Found' : 'Not found');
+    
+    // If no session, try to get token directly from request
+    let userId = session?.user?.id;
+    
+    if (userId) {
+      console.log('Using session authentication with user ID:', userId);
+    } else {
+      try {
+        const token = await getToken({ 
+          req: request as any,
+          secret: process.env.NEXTAUTH_SECRET 
+        });
+        
+        console.log('Token from getToken:', token ? 'Found' : 'Not found');
+        
+        if (token) {
+          userId = token.id as string;
+          console.log('Retrieved user info from token:', { userId });
+        }
+      } catch (error) {
+        console.error('Error getting token:', error);
+      }
+    }
+    
+    // If no authentication method succeeded
+    if (!userId) {
+      console.error('Reports Generate API - Unauthorized: No valid authentication found');
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -457,8 +494,6 @@ export async function POST(request: NextRequest) {
     }
     
     // Save the report to the database with the user ID
-    const userId = session.user.id;
-    
     const report = await prisma.report.create({
       data: {
         auditTypeId,

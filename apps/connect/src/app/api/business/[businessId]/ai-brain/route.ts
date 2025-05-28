@@ -2,12 +2,56 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getBusinessById, getBusinessAnalysis } from '@/app/actions/business';
 import { getBusinessGoalsAction, getBusinessKPIsAction, getBusinessMetricsAction } from '@/app/actions/serverActions';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { getToken } from 'next-auth/jwt';
 
 export async function GET(
   request: Request,
   context: { params: { businessId: string } }
 ) {
   try {
+    // Output environment variables for debugging
+    console.log('Business AI Brain API Environment:', {
+      NODE_ENV: process.env.NODE_ENV,
+      NEXTAUTH_URL: process.env.NEXTAUTH_URL,
+      VERCEL_URL: process.env.VERCEL_URL
+    });
+    
+    // Check authentication using multiple methods
+    // First try to get session using getServerSession
+    const session = await getServerSession(authOptions);
+    console.log('Business AI Brain API - Session from getServerSession:', session ? 'Found' : 'Not found');
+    
+    // If no session, try to get token directly from request
+    let userId = session?.user?.id;
+    
+    if (userId) {
+      console.log('Using session authentication with user ID:', userId);
+    } else {
+      try {
+        const token = await getToken({ 
+          req: request as any,
+          secret: process.env.NEXTAUTH_SECRET 
+        });
+        
+        console.log('Token from getToken:', token ? 'Found' : 'Not found');
+        
+        if (token) {
+          userId = token.id as string;
+          console.log('Retrieved user info from token:', { userId });
+        }
+      } catch (error) {
+        console.error('Error getting token:', error);
+      }
+    }
+    
+    // We'll continue even without authentication for this API as it's used by the internal report generation
+    // But we'll log it for monitoring
+    if (!userId) {
+      console.warn('Business AI Brain API - No valid authentication found, continuing as system operation');
+    }
+    
     // Get businessId from params in the recommended async way
     const { businessId } = await context.params;
     

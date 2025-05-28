@@ -78,6 +78,9 @@ export const config = {
     '/connect/:path*', 
     '/api/connect/:path*', 
     '/api/admin/:path*',
-    '/api/intake-questions/:path*'
+    '/api/intake-questions/:path*',
+    '/api/reports/:path*',
+    '/api/user/:path*',
+    '/api/business/:path*'
   ],
 }; 
