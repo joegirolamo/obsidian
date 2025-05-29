@@ -177,8 +177,19 @@ export default function ReportManagement({ bucket, businessId, onReportUpdated }
   const [aiConfigError, setAIConfigError] = useState<string | null>(null);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
+  const [aiBrainOptions, setAiBrainOptions] = useState({
+    includeBusiness: true,
+    includeWebsiteAnalysis: true,
+    includeGoals: true,
+    includeKPIs: true,
+    includeMetrics: true,
+    includeOpportunities: true,
+    includeIntakeQuestions: true
+  });
   
   // Check if AI is configured
   useEffect(() => {
@@ -271,7 +282,8 @@ export default function ReportManagement({ bucket, businessId, onReportUpdated }
     
     // Check if AI is configured
     if (!isAIConfigured) {
-      alert('AI processing is not configured. Please ask an administrator to configure AI in the settings page before running audits.');
+      setErrorMessage('AI processing is not configured. Please ask an administrator to configure AI in the settings page before running audits.');
+      setTimeout(() => setErrorMessage(null), 5000);
       return;
     }
     
@@ -279,11 +291,20 @@ export default function ReportManagement({ bucket, businessId, onReportUpdated }
     setRunningAuditId(selectedAuditType);
     setIsModalOpen(false); // Close the modal immediately
     
+    // Clear any existing messages
+    setSuccessMessage(null);
+    setErrorMessage(null);
+    
     try {
       // Create FormData for file upload
       const formData = new FormData();
       formData.append('auditTypeId', selectedAuditType);
       formData.append('businessId', businessId);
+      
+      // Add AI Brain options
+      Object.entries(aiBrainOptions).forEach(([key, value]) => {
+        formData.append(key, value.toString());
+      });
       
       // Add any supporting files
       files.forEach(file => {
@@ -296,9 +317,9 @@ export default function ReportManagement({ bucket, businessId, onReportUpdated }
         body: formData,
       });
       
+      const data = await response.json();
+      
       if (response.ok) {
-        const data = await response.json();
-        
         // Check if we have a report in the response
         if (data.report) {
           // Add the report to the current list instead of fetching all reports again
@@ -321,17 +342,23 @@ export default function ReportManagement({ bucket, businessId, onReportUpdated }
           setSelectedAuditType(null);
         }
       } else {
-        const errorData = await response.json();
-        console.error('Error generating report:', errorData);
-        alert(`Error: ${errorData.error || 'Failed to generate report'}`);
+        console.error('Error generating report:', data);
+        
+        // Show error message in UI instead of alert
+        const errorMsg = data.details ? `${data.error}: ${data.details}` : (data.error || 'Failed to generate report');
+        setErrorMessage(errorMsg);
+        
+        // Clear error message after 8 seconds (slightly longer than success message)
+        setTimeout(() => setErrorMessage(null), 8000);
       }
     } catch (error) {
       console.error('Error generating report:', error);
-      if (error instanceof Error) {
-        alert(`Error: ${error.message}`);
-      } else {
-        alert('An unexpected error occurred');
-      }
+      
+      // Show error message in UI instead of alert
+      setErrorMessage(error instanceof Error ? error.message : 'An unexpected error occurred');
+      
+      // Clear error message after 8 seconds
+      setTimeout(() => setErrorMessage(null), 8000);
     } finally {
       setIsRunningAudit(false);
       setRunningAuditId(null);
@@ -373,6 +400,13 @@ export default function ReportManagement({ bucket, businessId, onReportUpdated }
         <div className="mt-2 text-sm p-2 bg-red-50 border border-red-200 rounded-md text-red-700">
           <AlertTriangle className="h-3.5 w-3.5 inline-block mr-1" />
           {fetchError}
+        </div>
+      )}
+      
+      {errorMessage && (
+        <div className="mt-2 text-sm p-2 bg-red-50 border border-red-200 rounded-md text-red-700">
+          <AlertTriangle className="h-3.5 w-3.5 inline-block mr-1" />
+          {errorMessage}
         </div>
       )}
       
@@ -511,6 +545,123 @@ export default function ReportManagement({ bucket, businessId, onReportUpdated }
                         </p>
                       </div>
                     </div>
+                  </div>
+                  
+                  {/* Advanced AI Options (Collapsible) */}
+                  <div className="border border-gray-200 rounded-md">
+                    <button
+                      type="button"
+                      onClick={() => setShowAdvancedOptions(!showAdvancedOptions)}
+                      className="flex justify-between items-center w-full px-4 py-2 text-sm font-medium text-left text-gray-700 hover:bg-gray-50 focus:outline-none"
+                    >
+                      <span>Advanced AI Options</span>
+                      {showAdvancedOptions ? 
+                        <ChevronUp className="h-4 w-4 text-gray-500" /> : 
+                        <ChevronDown className="h-4 w-4 text-gray-500" />
+                      }
+                    </button>
+                    
+                    {showAdvancedOptions && (
+                      <div className="px-4 py-3 border-t border-gray-200 space-y-2">
+                        <p className="text-xs text-gray-500 mb-2">
+                          Select which business data should be included in the AI analysis.
+                          Disabling some options may reduce token usage but could affect report quality.
+                        </p>
+                        
+                        <div className="space-y-2">
+                          <label className="flex items-center">
+                            <input
+                              type="checkbox"
+                              className="rounded text-blue-600 focus:ring-blue-500 h-4 w-4"
+                              checked={aiBrainOptions.includeBusiness}
+                              onChange={(e) => setAiBrainOptions({
+                                ...aiBrainOptions,
+                                includeBusiness: e.target.checked
+                              })}
+                            />
+                            <span className="ml-2 text-sm text-gray-700">Business Information</span>
+                          </label>
+                          
+                          <label className="flex items-center">
+                            <input
+                              type="checkbox"
+                              className="rounded text-blue-600 focus:ring-blue-500 h-4 w-4"
+                              checked={aiBrainOptions.includeWebsiteAnalysis}
+                              onChange={(e) => setAiBrainOptions({
+                                ...aiBrainOptions,
+                                includeWebsiteAnalysis: e.target.checked
+                              })}
+                            />
+                            <span className="ml-2 text-sm text-gray-700">Website Analysis</span>
+                          </label>
+                          
+                          <label className="flex items-center">
+                            <input
+                              type="checkbox"
+                              className="rounded text-blue-600 focus:ring-blue-500 h-4 w-4"
+                              checked={aiBrainOptions.includeGoals}
+                              onChange={(e) => setAiBrainOptions({
+                                ...aiBrainOptions,
+                                includeGoals: e.target.checked
+                              })}
+                            />
+                            <span className="ml-2 text-sm text-gray-700">Business Goals</span>
+                          </label>
+                          
+                          <label className="flex items-center">
+                            <input
+                              type="checkbox"
+                              className="rounded text-blue-600 focus:ring-blue-500 h-4 w-4"
+                              checked={aiBrainOptions.includeKPIs}
+                              onChange={(e) => setAiBrainOptions({
+                                ...aiBrainOptions,
+                                includeKPIs: e.target.checked
+                              })}
+                            />
+                            <span className="ml-2 text-sm text-gray-700">KPIs</span>
+                          </label>
+                          
+                          <label className="flex items-center">
+                            <input
+                              type="checkbox"
+                              className="rounded text-blue-600 focus:ring-blue-500 h-4 w-4"
+                              checked={aiBrainOptions.includeMetrics}
+                              onChange={(e) => setAiBrainOptions({
+                                ...aiBrainOptions,
+                                includeMetrics: e.target.checked
+                              })}
+                            />
+                            <span className="ml-2 text-sm text-gray-700">Metrics</span>
+                          </label>
+                          
+                          <label className="flex items-center">
+                            <input
+                              type="checkbox"
+                              className="rounded text-blue-600 focus:ring-blue-500 h-4 w-4"
+                              checked={aiBrainOptions.includeOpportunities}
+                              onChange={(e) => setAiBrainOptions({
+                                ...aiBrainOptions,
+                                includeOpportunities: e.target.checked
+                              })}
+                            />
+                            <span className="ml-2 text-sm text-gray-700">Opportunities</span>
+                          </label>
+                          
+                          <label className="flex items-center">
+                            <input
+                              type="checkbox"
+                              className="rounded text-blue-600 focus:ring-blue-500 h-4 w-4"
+                              checked={aiBrainOptions.includeIntakeQuestions}
+                              onChange={(e) => setAiBrainOptions({
+                                ...aiBrainOptions,
+                                includeIntakeQuestions: e.target.checked
+                              })}
+                            />
+                            <span className="ml-2 text-sm text-gray-700">Intake Questions</span>
+                          </label>
+                        </div>
+                      </div>
+                    )}
                   </div>
                   
                   <div>

@@ -6,7 +6,6 @@ import { cn } from '../../../packages/utils';
 
 const subNavigation = [
   { name: 'General', href: '/admin/settings' },
-  { name: 'Access Management', href: '/admin/settings/access-management' },
 ];
 
 export default function SettingsLayout({
