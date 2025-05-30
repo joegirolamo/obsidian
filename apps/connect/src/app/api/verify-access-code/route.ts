@@ -3,11 +3,45 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { createDefaultToolsAction } from "@/app/actions/serverActions";
+import { getToken } from "next-auth/jwt";
 
 export async function POST(request: Request) {
   try {
     const { code } = await request.json();
+    
+    // Output environment variables for debugging
+    console.log('Verify Access Code API Environment:', {
+      NODE_ENV: process.env.NODE_ENV,
+      NEXTAUTH_URL: process.env.NEXTAUTH_URL,
+      VERCEL_URL: process.env.VERCEL_URL
+    });
+    
+    // First try to get session using getServerSession
     const session = await getServerSession(authOptions);
+    console.log('Verify Access Code API - Session from getServerSession:', session ? 'Found' : 'Not found');
+    
+    // If no session, try to get token directly from request
+    let userId = session?.user?.id;
+    
+    if (userId) {
+      console.log('Using session authentication with user ID:', userId);
+    } else {
+      try {
+        const token = await getToken({ 
+          req: request as any,
+          secret: process.env.NEXTAUTH_SECRET 
+        });
+        
+        console.log('Token from getToken:', token ? 'Found' : 'Not found');
+        
+        if (token) {
+          userId = token.id as string;
+          console.log('Retrieved user info from token:', { userId });
+        }
+      } catch (error) {
+        console.error('Error getting token:', error);
+      }
+    }
 
     if (!code) {
       return NextResponse.json(
@@ -16,7 +50,8 @@ export async function POST(request: Request) {
       );
     }
 
-    if (!session?.user?.id) {
+    if (!userId) {
+      console.error('Verify Access Code API - Unauthorized: No valid authentication found');
       return NextResponse.json(
         { error: "Authentication required" },
         { status: 401 }
@@ -47,7 +82,7 @@ export async function POST(request: Request) {
     const existingClientPortal = await prisma.clientPortal.findFirst({
       where: {
         businessId: business.id,
-        clientId: session.user.id
+        clientId: userId
       }
     });
 
@@ -56,7 +91,7 @@ export async function POST(request: Request) {
       await prisma.clientPortal.create({
         data: {
           businessId: business.id,
-          clientId: session.user.id,
+          clientId: userId,
           isActive: true
         }
       });
