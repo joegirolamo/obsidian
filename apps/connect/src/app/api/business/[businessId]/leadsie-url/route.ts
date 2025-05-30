@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { getToken } from 'next-auth/jwt';
 
 // Helper function to parse the businessId from URL path
 function getBusinessId(request: NextRequest): string | null {
@@ -26,8 +27,35 @@ export async function GET(request: NextRequest) {
       });
     }
 
+    // First try to get session using getServerSession
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    console.log('[DEBUG API] Session from getServerSession:', session ? 'Found' : 'Not found');
+    
+    // If no session, try to get token directly from request
+    let userId = session?.user?.id;
+    
+    if (userId) {
+      console.log('[DEBUG API] Using session authentication with user ID:', userId);
+    } else {
+      try {
+        const token = await getToken({ 
+          req: request as any,
+          secret: process.env.NEXTAUTH_SECRET 
+        });
+        
+        console.log('[DEBUG API] Token from getToken:', token ? 'Found' : 'Not found');
+        
+        if (token) {
+          userId = token.id as string;
+          console.log('[DEBUG API] Retrieved user info from token:', { userId });
+        }
+      } catch (error) {
+        console.error('[DEBUG API] Error getting token:', error);
+      }
+    }
+    
+    if (!userId) {
+      console.log('[DEBUG API] Authentication required - No valid authentication found');
       return new Response(JSON.stringify({ error: 'Authentication required' }), {
         status: 401,
         headers: { 'Content-Type': 'application/json' },
@@ -126,10 +154,35 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // First try to get session using getServerSession
     const session = await getServerSession(authOptions);
-
-    if (!session?.user?.id) {
-      console.error('[DEBUG API] Authentication required but no session found');
+    console.log('[DEBUG API] Session from getServerSession:', session ? 'Found' : 'Not found');
+    
+    // If no session, try to get token directly from request
+    let userId = session?.user?.id;
+    
+    if (userId) {
+      console.log('[DEBUG API] Using session authentication with user ID:', userId);
+    } else {
+      try {
+        const token = await getToken({ 
+          req: request as any,
+          secret: process.env.NEXTAUTH_SECRET 
+        });
+        
+        console.log('[DEBUG API] Token from getToken:', token ? 'Found' : 'Not found');
+        
+        if (token) {
+          userId = token.id as string;
+          console.log('[DEBUG API] Retrieved user info from token:', { userId });
+        }
+      } catch (error) {
+        console.error('[DEBUG API] Error getting token:', error);
+      }
+    }
+    
+    if (!userId) {
+      console.log('[DEBUG API] Authentication required - No valid authentication found');
       return new Response(JSON.stringify({ error: 'Authentication required' }), {
         status: 401,
         headers: { 'Content-Type': 'application/json' },
@@ -154,8 +207,8 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    if (business.adminId !== session.user.id) {
-      console.error('[DEBUG API] User not authorized. User ID:', session.user.id, 'Business Admin ID:', business.adminId);
+    if (business.adminId !== userId) {
+      console.error('[DEBUG API] User not authorized. User ID:', userId, 'Business Admin ID:', business.adminId);
       return new Response(JSON.stringify({ error: 'Not authorized' }), {
         status: 403,
         headers: { 'Content-Type': 'application/json' },
