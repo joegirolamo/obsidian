@@ -15,7 +15,8 @@ import {
   LineChart,
   Brain,
   Swords,
-  Lightbulb
+  Lightbulb,
+  Clock
 } from 'lucide-react';
 import ObsidianLogo from './ObsidianLogo';
 import { getBusinessByAdminId } from '@/app/actions/business';
@@ -173,7 +174,8 @@ export default function AdminNav() {
         href: '/admin/dvcp/scorecards',
         subItems: [
           { label: 'Scorecards', href: '/admin/dvcp/scorecards', icon: Target },
-          { label: 'Opportunities', href: '/admin/dvcp/opportunities', icon: Lightbulb }
+          { label: 'Opportunities', href: '/admin/dvcp/opportunities', icon: Lightbulb },
+          { label: 'Planning', href: '/admin/dvcp/planning', icon: Clock }
         ]
       },
       {

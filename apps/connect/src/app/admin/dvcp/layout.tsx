@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { ReactNode } from 'react';
 import { useSession } from 'next-auth/react';
 import { redirect } from 'next/navigation';
@@ -9,7 +9,8 @@ import { cn } from '../../../packages/utils';
 
 const subNavigation = [
   { name: 'Scorecards', href: '/admin/dvcp/scorecards' },
-  { name: 'Opportunities', href: '/admin/dvcp/opportunities' }
+  { name: 'Opportunities', href: '/admin/dvcp/opportunities' },
+  { name: 'Planning', href: '/admin/dvcp/planning' }
 ];
 
 export default function DVCPLayout({
@@ -18,6 +19,8 @@ export default function DVCPLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const businessId = searchParams.get('businessId');
 
   return (
     <div className="space-y-6">
@@ -26,7 +29,7 @@ export default function DVCPLayout({
           {subNavigation.map((item) => (
             <Link
               key={item.name}
-              href={item.href}
+              href={`${item.href}${businessId ? `?businessId=${businessId}` : ''}`}
               className={cn(
                 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm',
                 pathname === item.href

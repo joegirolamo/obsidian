@@ -177,6 +177,7 @@ model Opportunity {
   serviceArea  String
   targetKPI    String?
   isPublished  Boolean           @default(false)
+  timeline     String?           @default("SHORT")
   business     Business          @relation(fields: [businessId], references: [id])
 }
 

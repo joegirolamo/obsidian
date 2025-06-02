@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Opportunity" ADD COLUMN IF NOT EXISTS "timeline_span" INTEGER NOT NULL DEFAULT 1; 

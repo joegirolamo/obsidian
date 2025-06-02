@@ -419,4 +419,72 @@ Format your response as a JSON array of objects with properties: title, descript
     console.error('Failed to generate opportunities with AI:', error);
     return { success: false, error: error instanceof Error ? error.message : 'Failed to generate opportunities with AI' };
   }
+}
+
+export async function updateOpportunityTimeline(
+  opportunityId: string,
+  timeline: string
+) {
+  try {
+    const opportunity = await prisma.opportunity.update({
+      where: { id: opportunityId },
+      data: { timeline },
+    });
+
+    revalidatePath('/admin/dvcp/opportunities');
+    revalidatePath('/admin/dvcp/planning');
+    return { success: true, opportunity };
+  } catch (error) {
+    console.error('Failed to update opportunity timeline:', error);
+    return { success: false, error: 'Failed to update opportunity timeline' };
+  }
+}
+
+/**
+ * Update an opportunity's timeline span in the database
+ */
+export async function updateOpportunityTimelineSpan(
+  opportunityId: string,
+  span: number
+) {
+  try {
+    // First, get the current opportunity to preserve its description
+    const currentOpp = await prisma.opportunity.findUnique({
+      where: { id: opportunityId },
+      select: { description: true }
+    });
+
+    // Create a description that preserves existing content but adds span data
+    let newDescription = currentOpp?.description || '';
+    
+    // Check if there's already span data in the description
+    const spanMarker = "[SPAN:";
+    const spanEndMarker = "]";
+    
+    if (newDescription.includes(spanMarker)) {
+      // Replace existing span data
+      newDescription = newDescription.replace(
+        /\[SPAN:[0-9]+\]/g, 
+        `[SPAN:${span}]`
+      );
+    } else {
+      // Add span data at the end
+      newDescription = `${newDescription} [SPAN:${span}]`.trim();
+    }
+    
+    // Update the opportunity in the database
+    const opportunity = await prisma.opportunity.update({
+      where: { id: opportunityId },
+      data: { 
+        description: newDescription
+      },
+    });
+
+    revalidatePath('/admin/dvcp/opportunities');
+    revalidatePath('/admin/dvcp/planning');
+    return { success: true, opportunity };
+  } catch (error) {
+    console.error('Failed to update opportunity span:', error);
+    return { success: false, error: 'Failed to update opportunity span' };
+  }
 } 
